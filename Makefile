@@ -1,4 +1,4 @@
-.PHONY: all install distclean
+.PHONY: all install distclean dist
 
 all:
 	[ -f config.h ] || ./configure
@@ -10,3 +10,6 @@ distclean:
 install:
 	cp tif22pnm $(prefix)/bin
 	cp png22pnm $(prefix)/bin
+
+dist: distclean
+	./do.sh dist

@@ -3,13 +3,8 @@ debian/changelog
 debian/control
 debian/copyright
 debian/dirs
-debian/files
 debian/png22pnm.docs
-debian/png22pnm.files
-debian/png22pnm.substvars
 debian/rules
-debian/substvars
-debian/tif22pnm.files
 files
 README
 minigimp.c
@@ -29,3 +24,4 @@ do.sh
 config.h.in
 cc_help.sh.in
 COPYING
+Makefile
