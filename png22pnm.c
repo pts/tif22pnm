@@ -596,8 +596,11 @@ FILE *tfp;
   static char *alpha_string;
 
 #if DO_WIN
-  FILE *so=fdopen(1, "wb"); /* binary stdout */
+  FILE *so; int sofd;
   setmode(1, O_BINARY);
+  if (0>(sofd=dup(1))) abort(); /* BUGFIX at Tue Mar 18 17:03:42 CET 2003 */
+  setmode(sofd, O_BINARY);
+  if (NULL==(so=fdopen(sofd, "wb"))) abort(); /* binary stdout */
 #else
   FILE *so=stdout;
 #endif
