@@ -6,6 +6,7 @@ Standards-Version: 3.2.1
 Build-Depends: debmake, libtiff-dev, (libpng-dev | libpng2-dev | libpng3-dev)
 
 Package: tif22pnm
+Replaces: png22pnm
 Architecture: i386
 Depends: ${shlibs:Depends}
 Description: an extremely compatible between TIFF and PNM converter
@@ -17,6 +18,7 @@ Description: an extremely compatible between TIFF and PNM converter
  PNM is also bundled into the distribution
 
 Package: png22pnm
+Replaces: tif22pnm
 Architecture: i386
 Depends: ${shlibs:Depends}
 Description: an extremely compatible PNG to PNM converter

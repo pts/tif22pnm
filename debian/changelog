@@ -1,3 +1,9 @@
+tif22pnm (0.11-2) unstable; urgency=low
+
+  * packaging changes
+
+ -- Szabó Péter <pts@math.bme.hu>  Mon, 20 Oct 2003 15:55:05 +0200
+
 tif22pnm (0.11-1) unstable; urgency=low
 
   * Win32 serious BUGFIX.
