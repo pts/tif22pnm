@@ -9,6 +9,7 @@
  *   -rgbu et al.
  *   -text implemented
  *   BUGFIXes
+ * 0.10 Wed Feb  5 21:26:33 CET 2003: png22pnm, Debian package, CVS merge
  *
  * v0.05 derived from: tifftopnm.c - converts a Tagged Image File to a portable anymap
  *
@@ -44,7 +45,7 @@
 #endif
 
 #define PRODUCT "tif22pnm"
-#define VERSION "0.08"
+#define VERSION "0.10"
 
 /* --- string manipulation */
 
