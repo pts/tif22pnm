@@ -1,0 +1,11 @@
+tif22pnm (0.09-1) unstable; urgency=low
+
+  * png22pnm
+
+ -- Szabó Péter <pts@math.bme.hu>  Fri, 17 Jan 2003 20:15:24 +0100
+
+tif22pnm (0.08-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Szabó Péter <pts@math.bme.hu>  Fri, 17 Jan 2003 19:39:34 +0100

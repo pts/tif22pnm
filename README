@@ -2,12 +2,14 @@ This is the README for tif22pnm.c.
 by pts@fazekas.hu at Sun Apr 14 22:56:35 CEST 2002
 Tue Jun 11 18:10:35 CEST 2002
 v0.06 at Mon Oct  7 01:35:40 CEST 2002
+v0.09 at Fri Jan 17 19:38:29 CET 2003
 
 tif22pnm is a command line utility that converts between TIFF sampled images
 and PNM images (both directions), using the libtiff library, but not using
 NetPBM. tif22pnm is similar to tifftopnm utility in the NetPBM distribution,
 but tif22pnm handles a wider range of TIFF files and it is able to output
-the alpha channel as a PBM or PGM file.
+the alpha channel as a PBM or PGM file. png22pnm, a converter from PNG to
+PNM is also bundled into the distribution.
 
 Caveat: tiff2pnm v0.07 contains >1000 lines of untested code. The author
 wants to improve the software, and he welcomes bug reports. The author has
@@ -27,10 +29,102 @@ Unique advantages (over any other TIFF to PNM converter):
 -- automatically writes a smaller file (PBM < PGM < PPM) if image pixels
    make it possible
 
-Compilation
-~~~~~~~~~~~
+Compilation under UNIX
+~~~~~~~~~~~~~~~~~~~~~~
 	./configure
 	./do.sh compile
+
+Compilation under Win32
+~~~~~~~~~~~~~~~~~~~~~~~
+To compile tif22pnm.exe and png22pnm.exe, the Win32 equivalents of the UNIX
+utilities tif22pnm and png22pnm, you have to install these build
+dependencies first:
+
+-- MinGW and MSYS, available from http://www.mingw.org
+
+-- libz (zlib) for MinGW
+   libjpeg for MinGW
+   libtiff for MinGW
+   libpng for MinGW
+
+   Get them from:
+
+   http://jrfonseca.dyndns.org/projects/gnu-win32/software/ported/index.html
+   http://gnuwin32.sourceforge.net/packages.html
+   http://sourceforge.net/project/showfiles.php?group_id=23617&release_id=63473
+
+   To build a self-contained .exe files, you'll need the appropriate .a
+   files:
+
+	libz.a
+	libpng.a
+	libjpeg.a
+	libtiff.a
+
+   Most of the libraries create only the .dll files properly, and create the
+   .a file that doesn't work without the .dll. To overcome this, watch which
+   commands were used during the build to create the dll, and run `ar cr' to
+   create the .a file manually. For example, recognise the command
+
+	gcc -shared -o libpng.a -Wl,--out-implib,libpng.a -Wl,--enable-auto-image png.o pngerror.o pngget.o pngmem.o pngpread.o pngread.o pngrio.o pngrtran.o pngrutil.o pngset.o pngtrans.o pngwio.o pngwrite.o pngwtran.o pngwutil.o -lz
+
+   and execute this afterwards:
+
+	ar cr libpng.a png.o pngerror.o pngget.o pngmem.o pngpread.o pngread.o pngrio.o pngrtran.o pngrutil.o pngset.o pngtrans.o pngwio.o pngwrite.o pngwtran.o pngwutil.o
+
+   If the .a file is smaller than the sum of the .o files, or it contains
+   the name of a .dll with a similar name, simply forget about it. Never
+   ever run ranlib!
+
+   Copy *.h to the MinGW directory containing _mingw.h. Copy *.a to the
+   directory containing libcrtdll.a
+
+To build tif22pnm and png22pnm:
+
+1. Install all the build dependencies.
+
+2. Open the MSYS terminal window from the start menu.
+
+3. Run `explorer .' to figure out what is the current working directory.
+   Let's call this directory the MSYS home.
+
+4. Download the tif22pnm sources into the MSYS home:
+
+	http://www.inf.bme.hu/~pts/tif22pnm-latest.tar.gz
+
+5. Unpack the sources. Run:
+
+	tar xzvf tif22pnm-latest.tar.gz
+
+6. Run `cd tif22pnm-*.*' to enter the tif22pnm source directory. It should
+   contain a newer version of this README and the file tif22pnm.c.
+
+7. Run
+
+	export CC='gcc -static'  # to build standalone .exe files
+	./configure
+
+   Verify that both libtiff and libpng are found. If not, examine config.log,
+   and copy the *.a and *.h files from the libraries to a place where gcc
+   will find them.
+
+8. Run
+
+	sh ./do.sh compile
+
+9. The files tif22pnm.exe and png22pnm.exe are now created in the current
+   directory. Use them. You may copy them to another directory right now:
+
+	cp *22pnm.exe 'C:\Program Files'
+
+10. You should invoke *22pnm.exe from the command line (COMMAND.COM or
+    CMD.EXE) with the _appropriate_ arguments, described elsewhere in this
+    document. Don't put it into the Start menu, it won't work (a window will
+    flash in, showing an error message that you haven't supplied the right
+    arguments).
+
+11. The cjpeg.exe and djpeg.exe are useful utilities found in the libjpeg
+    distribution (which you've installed anyway, because libtiff needs it).
 
 Goal
 ~~~~
@@ -77,5 +171,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+Revision history
+~~~~~~~~~~~~~~~~
+0.08 works on Win32 + MinGW
+
+0.09 Fri Jan 17 19:39:07 CET 2003
+     integrated png22pnm
+     Debian package
 
 __END__

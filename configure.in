@@ -29,10 +29,15 @@ dnl AC_PTS_PROG_CFLAGS(nrne, -fno-rtti -fno-exceptions)
 dnl ^^^ `g++ -fno-rtti': disables `typeinfo' (??) and run-time type identification
 dnl ^^^ `g++ -fno-exceptions': disables catch and throw
 AC_PTS_PROG_CFLAGSB(apwaw, -ansi -pedantic -Wall -W)
+dnl gcc-3.2 gives tons of useless warnings on -Wtraditional
+AC_PTS_CHECK_IGNORING(nebfcmd,-W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations)
+if test x"$ac_cv_pts_ignoring_nebfcmd" = xyes
+then ac_cv_prog_cxx_nebfcmd=no
+fi
+AC_PTS_PROG_CFLAGSB(nebfcmd,-Wnested-externs -Wbad-function-cast -Wmissing-declarations)
 AC_PTS_PROG_CFLAGSB(ptscopts, -Wstrict-prototypes dnl
--Wtraditional -Wnested-externs -Wpointer-arith -Wcast-align -Winline dnl
--Wcast-qual -Wmissing-prototypes dnl
--Wmissing-declarations)
+-Wpointer-arith -Wcast-align -Winline dnl
+-Wcast-qual -Wmissing-prototypes)
 dnl vvv g++ version egcs-2.91.60 + gcc version 2.7.2.3 requires
 dnl     `g++ -fno-rtti -fno-exceptions' for AC_PTS_GCC_LINKS_CXX to be `yes'
 
@@ -48,7 +53,9 @@ AC_PTS_ENSURE_ASCII_SYSTEM
 AC_C_CONST
 AC_PTS_C_VOLATILE
 
-dnl Checks for libraries.
+dnl Command-line options for libraries.
+AC_SUBST(LIBS_TIFF)
+LIBS_TIFF=""
 
 AC_MSG_CHECKING(for --with-libtiff-ldir)
 AC_ARG_WITH(libtiff_ldir,
@@ -69,12 +76,53 @@ AC_MSG_RESULT(${with_libtiff_idir-none})
 if test x"$with_libtiff_idir" != x; then
 if test x"$with_libtiff_idir" != xno && test -f "$with_libtiff_idir"/tiffio.h
 then CPPFLAGS="$CPPFLAGS -I$with_libtiff_idir"
-else AC_ERROR(the DIR --with-libtiff-idir should contain tiffio.h); fi
+else AC_MSG_WARN(the DIR --with-libtiff-idir should contain tiffio.h); LIBS_TIFF=missing; fi
 fi
 
+dnl ---
+
+AC_SUBST(LIBS_PNG)
+LIBS_PNG=""
+
+AC_MSG_CHECKING(for --with-libpng-ldir)
+AC_ARG_WITH(libpng_ldir,
+[  --with-libpng-ldir=DIR  DIR contains libpng*.so],
+[], [])
+AC_MSG_RESULT(${with_libpng_ldir-none})
+if test x"$with_libpng_ldir" != x; then
+if test x"$with_libpng_ldir" != xno && test -d "$with_libpng_ldir"
+then LDFLAGS="$LDFLAGS -L$with_libpng_ldir"
+else AC_ERROR(proper usage is --with-libpng-ldir=DIR); fi
+fi
+
+AC_MSG_CHECKING(for --with-libpng-idir)
+AC_ARG_WITH(libpng_idir,
+[  --with-libpng-idir=DIR  DIR contains png.h],
+[], [])
+AC_MSG_RESULT(${with_libpng_idir-none})
+if test x"$with_libpng_idir" != x; then
+if test x"$with_libpng_idir" != xno && test -f "$with_libpng_idir"/png.h
+then CPPFLAGS="$CPPFLAGS -I$with_libpng_idir"
+else AC_MSG_WARN(the DIR --with-libpng-idir should contain png.h); LIBS_PNG=missing; fi
+fi
+
+dnl Checks for libraries.
+
+if test xmissing != x"$LIBS_TIFF"; then
+LIBS=""
 dnl vvv "tiff -lm" is required on Sun Solaris
-AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm"], [],
-  AC_MSG_ERROR(libtiff required))
+dnl vvv "tiff -lm -lz -ljpeg" is required by Win32 MinGW
+AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm" "tiff -lm -lz -ljpeg"],
+  [LIBS_TIFF="$LIBS"], [LIBS_TIFF=missing])
+dnl AC_MSG_ERROR(libtiff required))
+fi
+
+if test xmissing != x"$LIBS_PNG"; then
+LIBS=""
+dnl vvv "png -lz" is required by Win32 MinGW
+dnl vvv "png12 -lz -lm" is required by Debian Sid
+AC_SEARCH_LIBS(png_create_read_struct, [png "png -lz" "png -lz -lm" "png12 -lz -lm" "png13 -lz -lm" "png14 -lz -lm"], [LIBS_PNG="$LIBS"], [LIBS_PNG=missing])
+fi
 
 dnl Checks for header files.
 dnl AC_CHECK_HEADERS(stdio.h); exit 42
@@ -92,10 +140,11 @@ dnl Checks for integral/pointer sizes.
 
 dnl AC_C_CHAR_UNSIGNED
 
-AC_REQUIRE([AC_PTS_CHECK_POINTERS])
-
-AC_REQUIRE([AC_PTS_CHECK_INTEGRALS])
+AC_PTS_CHECK_POINTERS
+dnl AC_PTS_CHECK_INTEGRALS -- alread in AC_PTS_CHECK_POINTERS
 dnl Dat: POINTERS, INTEGRALS order would result in `(cached)' without AC_REQUIRE
+dnl AC_REQUIRE([AC_PTS_CHECK_POINTERS])
+dnl AC_REQUIRE([AC_PTS_CHECK_INTEGRALS])
 
 dnl ac_cv_alma=korte # Dat: automagically inserted into config.cache
 dnl AC_DEFINE(PTS_INT128_T, 42) # Dat: includes to conftest.h, config.h
@@ -103,7 +152,7 @@ dnl AC_DEFINE(PTS_INT128_T, 42) # Dat: includes to conftest.h, config.h
 dnl cat confdefs.h # Dat: contains already AC_DEFINE()d symbols
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_SIZE_T
+dnl AC_TYPE_SIZE_T
 AC_PTS_CHECK_INTEGRAL_TYPE(size_t, unsigned)
 dnl AC_PTS_CHECK_INTEGRAL_TYPE(time_t, unsigned)
 dnl AC_PTS_CHECK_INTEGRAL_TYPE(mode_t, int)
@@ -117,7 +166,8 @@ dnl AC_PTS_CHECK_INTEGRAL_TYPE(size_tt, signed)
 dnl Dat: AC_TYPE_SIGNAL is OK, there should be no AC_PTS_CHECK_* substitute
 dnl AC_PTS_TYPE_GETGROUPS
 dnl ^^^ doesn't work wth CPPFLAGS=-traditional
-AC_CHECK_SIZEOF(bool, -1)
+AC_PTS_CHECK_SIZEOF(bool, -1)
+dnl AC_CHECK_SIZEOF would check for tons of unnecessary .h files
 dnl ^^^ Dat: 0 #if (PC: 1, Digital Unix: 8, Solaris: 4)
 
 dnl Checks for library functions.
@@ -128,3 +178,14 @@ dnl skipping AC_OUTPUT -- bad!!
 dnl AC_OUTPUT(Makehelp)
 AC_OUTPUT(cc_help.sh)
 
+if test xmissing = x"$LIBS_TIFF"; then
+  echo "status tif22pnm: skipped"
+else
+  echo "status tif22pnm: to be built (with $LIBS_TIFF)"
+fi
+
+if test xmissing = x"$LIBS_PNG"; then
+  echo "status png22pnm: skipped"
+else
+  echo "status png22pnm: to be built (with $LIBS_PNG)"
+fi

@@ -47,20 +47,22 @@ elif [ "$CMD" = checker ]; then
   L_CC="checkergcc $GFLAG"
   L_LD="checkergcc"
 elif [ "$CMD" = small ]; then
-  L_CC="$CC -s -Os -DNDEBUG"
+  L_CC="$CC -Os -DNDEBUG"
   L_LD="$LD -s"
 elif [ "$CMD" = final ]; then
-  L_CC="$CC -s -O2 -DNDEBUG"
+  L_CC="$CC -O2 -DNDEBUG"
   L_LD="$LD -s"
 elif [ "$CMD" = asserted ]; then
-  L_CC="$CC -s -O2"
+  L_CC="$CC -O2"
   L_LD="$LD -s"
 elif [ "$CMD" = clean ]; then
-  rm -f *.o core DEADJOE
+  rm -f *.o core DEADJOE tif22pnm png22pnm
+  exit
 elif [ "$CMD" = confclean ]; then
   set -ex
-  rm -f tif22pnm *.o core DEADJOE *~ 
+  rm -f tif22pnm png22pnm *.o core DEADJOE *~ autom4te.cache/*
   rm -f cc_help.sh config.status config.log config.cache config.h
+  rmdir autom4te.cache || true
   if type -p autoconf >/dev/null; then
     rm -f configure
     autoconf
@@ -68,7 +70,7 @@ elif [ "$CMD" = confclean ]; then
   exit
 elif [ "$CMD" = dist ]; then
   set -ex
-  rm -f tif22pnm *.o core DEADJOE *~ 
+  rm -f tif22pnm png22pnm *.o core DEADJOE *~ 
   rm -f cc_help.sh config.status config.log config.cache config.h
   set +ex
   if type -p autoconf >/dev/null; then
@@ -90,13 +92,28 @@ else
   exit 2
 fi
 
+build() {
+  [ "$LIBS" = "missing" ] && return 0
+  OS=
+  for C in $SOURCES; do OS="$OS ${C%.*}.o"; done
+  set -e
+  for C in $SOURCES; do
+    echo + $L_CC $CPPFLAGS $CFLAGS $CFLAGSB -c $C
+    $L_CC $CPPFLAGS $CFLAGS $CFLAGSB -c $C
+  done
+  echo + $L_LD $LDFLAGS $OS -o "$TARGET" $LIBS
+  $L_LD $LDFLAGS $OS -o "$TARGET" $LIBS
+  set +e
+  export TARGET
+  echo "Created executable file: $TARGET (size: `perl -e 'print -s $ENV{TARGET}'`)."
+}
+
 SOURCES='ptspnm.c minigimp.c miniglib.c ptstiff3.c tif22pnm.c'
-OS=
-for C in $SOURCES; do OS="$OS ${C%.*}.o"; done
-set -ex
-for C in $SOURCES; do
-  $L_CC $CPPFLAGS $CFLAGS $CFLAGSB -c $C
-done
-$L_LD $LDFLAGS $LIBS $OS -o tif22pnm
-set +ex
-echo "Created executable file: tif22pnm (size: `perl -e 'print -s "tif22pnm"'`)."
+TARGET=tif22pnm
+LIBS="$LIBS_TIFF"
+build
+
+SOURCES='png22pnm.c'
+TARGET=png22pnm
+LIBS="$LIBS_PNG"
+build

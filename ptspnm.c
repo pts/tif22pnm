@@ -1,8 +1,8 @@
-/* ptspnm.h -- reads and writes PNM files, without external libraries
+/* ptspnm.c -- reads and writes PNM files, without external libraries
  * by pts@fazekas.hu at Sun Oct  6 19:27:23 CEST 2002
  */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma implementation
 #endif
 
@@ -71,7 +71,7 @@ int ptspnm_save_image(gchar const*filename0, gint32 himage, gint32 hdrawable,
   /** Must be >=20 bytes long to pacify xv (filesize>=30 bytes) */
   /* Imp: respect param rawbits */
   static char const* comment="\n# PNM exported by PtsGIMP\n";
-  char *filename;
+  char const*filename=filename0;
   FILE *f;
   GimpPixelRgn r;
   GimpDrawable *gd;
@@ -79,7 +79,9 @@ int ptspnm_save_image(gchar const*filename0, gint32 himage, gint32 hdrawable,
   guchar *topleft;
   GimpImageType type;
   
+#if 0
   filename=*(char**)&filename0; /* pacify gcc const_cast warning */
+#endif
   f=(filename!=NULLP)?fopen(filename,"wb"):stdout;
   if (!f) { writerr:
     g_message ("Can't write PNM image to `%s'\n", filename);
@@ -321,9 +323,11 @@ static /*hdrawable*/gint32 load_pnm_low(FILE *f, gbool only_mask) {
   gint32 hlayer, halpha, himage;
   int s;
   FILE *f;
-  char *filename;
+  char const*filename=filename0;
   GimpDrawable *gd;
-  filename=*(char**)&filename0; /* pacify gcc const_cast warning */
+#if 0
+  filename=*(char**)&filename0; /* 2.95 SUXX pacify gcc const_cast warning */
+#endif
   f=(filename!=NULLP)?fopen(filename,"rb"):stdin;
   if (!f) { readerr:
     g_message ("PNM: can't read image from `%s'\n", filename);

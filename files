@@ -1,3 +1,15 @@
+debian/README.debian
+debian/changelog
+debian/control
+debian/copyright
+debian/dirs
+debian/files
+debian/png22pnm.docs
+debian/png22pnm.files
+debian/png22pnm.substvars
+debian/rules
+debian/substvars
+debian/tif22pnm.files
 files
 README
 minigimp.c
@@ -5,6 +17,7 @@ miniglib.c
 ptspnm.c
 ptstiff3.c
 tif22pnm.c
+png22pnm.c
 minigimp.h
 miniglib.h
 ptspnm.h

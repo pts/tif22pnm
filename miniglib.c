@@ -2,7 +2,7 @@
  * by pts@fazekas.hu at Sun Sep 29 22:13:46 CEST 2002
  */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma implementation
 #endif
 
@@ -49,6 +49,14 @@ void *g_malloc(gsize_t len) {
 void *g_malloc0(gsize_t len) {
   return malloc(len);
 }
-void g_free(void *p) { if (p!=NULLP) free(p); }
+void g_free(void const*p) {
+  if (p!=NULLP) {
+    #ifdef __cplusplus
+      free(const_cast<void*>(p));
+    #else
+      free((void*)(long)p); /* pacify gcc 2.95 warning */
+    #endif
+  }
+}
 
 /* __END__ */

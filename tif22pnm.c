@@ -38,6 +38,10 @@
 #include "minigimp.h"
 #include <stdio.h>
 #include <string.h> /* strcmp() */
+#ifdef __MINGW32__
+#undef __STRICT_ANSI__
+#include <fcntl.h> /* setmode() */
+#endif
 
 #define PRODUCT "tif22pnm"
 #define VERSION "0.08"
@@ -194,7 +198,12 @@ int main ___((int argc, char const* const* argv), ( argc, argv ),
     /* inputfile=(char const*)NULLP; */
   }
 
-  if (0==strcmp(outputfile, "-")) outputfile=(char const*)NULLP;
+  if (0==strcmp(outputfile, "-")) {
+#ifdef __MINGW32__
+    setmode(1, O_BINARY);
+#endif
+    outputfile=(char const*)NULLP;
+  }
   /* Imp: differennt format for .ppm, .pgm, .pbm and .pnm */
   /* Imp: respect output .ext, PGM: */
 

@@ -52,7 +52,7 @@
 ** other special, indirect and consequential damages.
 */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma implementation
 #endif
 
@@ -473,7 +473,7 @@ load_image (gchar const* filename0, gbool headerdump_p) {
   gushort  extra, *extra_types;
   channel_data *channel= NULL;
   /**** pts ****/
-  char *filename;
+  char const*filename;
 
   gushort *redmap, *greenmap, *bluemap;
 #if PTS_USE_GIMPRGB
@@ -501,7 +501,10 @@ load_image (gchar const* filename0, gbool headerdump_p) {
   TIFFSetErrorHandler (tiff_error);
 
   /**** pts ****/
+#if 0
   filename=*(char**)&filename0; /* pacify gcc const_cast warning */
+#endif
+  filename=filename0;
   tif=(filename==NULLP)?
     TIFFFdOpen( 0, "Standard Input", "rb" ) :
     TIFFOpen (filename, "rb");
@@ -1453,7 +1456,7 @@ save_image (gchar   const*filename0,
   gint           y, yend;
   gchar         *name;
   /**** pts ****/
-  char *filename;
+  char const*filename;
 
   (void)name; /**** pts ****/
 
@@ -1472,7 +1475,10 @@ save_image (gchar   const*filename0,
   TIFFSetErrorHandler (tiff_error);
 
   /**** pts ****/
+#if 0
   filename=*(char**)&filename0; /* pacify gcc const_cast warning */
+#endif
+  filename=filename0;
   param_assert(filename!=NULLP);
   tif = TIFFOpen (filename, "wb");
   if (!tif) 

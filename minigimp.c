@@ -10,13 +10,14 @@
  * bad: dhead->prev. good: dhead->u.drawable.dprev
  */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma implementation
 #endif
 
 #include "minigimp.h"
 #include <string.h> /* strlen() */
 #include <stdio.h> /* magic... */
+#include <stdlib.h> /* exit() */
 
 /* --- Generic resource handling (images and drawables) */
 
@@ -712,7 +713,11 @@ void gimp_image_parasite_attach(gint32 image, GimpParasite *parasite){
 }
 static void gimp_drawable_free0(MyRes *dra) {
   assert(IS_DRAWABLE(dra)); /* not param_assert */
+#if 0
   g_free(*(char**)&dra->u.drawable.gd.name); /* pacify gcc warning */
+#else
+  g_free(dra->u.drawable.gd.name);
+#endif
   g_free(dra->u.drawable.data);
   dra->u.drawable.data=(guchar*)NULLP; /* failsafe */
   dra->u.drawable.image=(MyRes*)NULLP; /* failsafe */
@@ -1451,8 +1456,10 @@ GimptsFileFormat gimpts_magic(gchar const* filename0) {
   GimptsFileFormat ret=GIMPTS_FF_INVALID;
   char buf[MAGIC_LEN];
   FILE *f;
-  char *filename;
+  char const*filename=filename0;
+#if 0
   filename=*(char**)&filename0; /* pacify gcc const_cast warning */
+#endif
   f=filename!=NULLP?fopen(filename,"rb"):stdin;
   if (f==NULLP) return GIMPTS_FF_INVALID;
   memset(buf, '\0', sizeof(buf));

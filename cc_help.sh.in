@@ -1,6 +1,9 @@
-CC='@CC@'
+if test x"$CC" = x; then
+  CC='@CC@'
+fi
 LD='@CC@'
-LIBS='@LIBS@'
+LIBS_PNG='@LIBS_PNG@'
+LIBS_TIFF='@LIBS_TIFF@'
 ENABLE_DEBUG='@ENABLE_DEBUG@'
 GFLAG='@GFLAG@'
 CFLAGS='@CFLAGS@'

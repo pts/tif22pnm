@@ -3,9 +3,17 @@ dnl aclocal.m4, read by configure
 dnl by pts@fazekas.hu at Thu Nov  1 23:07:16 CET 2001
 dnl advanced integer checks Sat Apr  6 12:32:02 CEST 2002
 dnl
+dnl Imp: is shell `elif' compatible
 dnl Imp: less autoconf warnings
 dnl Dat: m4 SUXX, no normal error message for missing ')'
 dnl Dat: FILE *f=fopen("conftestval", "w"); is autoconf trad
+
+dnl autoconf-2.13 generates bad code for AC_C_CONST in g++-3.2
+dnl autoconf-2.54 is good (verified at Wed Dec 11 15:28:28 CET 2002)
+AC_PREREQ([2.14])
+
+dnl stupid autoconf-2.54 does #include <stdlib.h>
+m4_define([_AC_PROG_CXX_EXIT_DECLARATION],[:])
 
 AC_DEFUN([AC_PTS_CHECK_INTEGRALS],[
 dnl Checks for integral sizes.
@@ -25,14 +33,14 @@ AC_TRY_RUN([
 #undef volatile
 #undef inline
 #include <stdio.h>
-main(){FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+int main(){FILE *f=fopen("conftestval", "w");
+  if (!f) return 1;
   fprintf(f, "ac_cv_sizeof_char=%d\n", sizeof(char));
   fprintf(f, "ac_cv_sizeof_char_p=%d\n", sizeof(char*));
   fprintf(f, "ac_cv_sizeof_short=%d\n", sizeof(short));
   fprintf(f, "ac_cv_sizeof_int=%d\n", sizeof(int));
   fprintf(f, "ac_cv_sizeof_long=%d\n", sizeof(long));
-  exit(0);
+  return 0; /* exit(0); -- return is more portable */
 }], eval "`cat conftestval`", , ac_cv_sizeof_char=-1)])
 AC_MSG_RESULT($ac_cv_sizeof_char)
 AC_DEFINE_UNQUOTED(SIZEOF_CHAR, $ac_cv_sizeof_char)
@@ -41,20 +49,20 @@ AC_DEFINE_UNQUOTED(SIZEOF_SHORT, $ac_cv_sizeof_short)
 AC_DEFINE_UNQUOTED(SIZEOF_INT, $ac_cv_sizeof_int)
 AC_DEFINE_UNQUOTED(SIZEOF_LONG, $ac_cv_sizeof_long)
 fi
-dnl AC_CHECK_SIZEOF(char, -1)
+dnl AC_PTS_CHECK_SIZEOF(char, -1)
 
 if test $ac_cv_sizeof_char = -1; then
   AC_MSG_ERROR(cross compiling not supported by .._PTS_CHECK_INTEGRALS)
 fi
-AC_CHECK_SIZEOF(short, -1)
-AC_CHECK_SIZEOF(int, -1)
-AC_CHECK_SIZEOF(long, -1)
-AC_CHECK_SIZEOF(long long, -1)
+AC_PTS_CHECK_SIZEOF(short, -1)
+AC_PTS_CHECK_SIZEOF(int, -1)
+AC_PTS_CHECK_SIZEOF(long, -1)
+AC_PTS_CHECK_SIZEOF(long long, -1)
 if test $ac_cv_sizeof_long_long = 8
 then ac_cv_sizeof___int64=0; ac_cv_sizeof_very_long=0; fi
-AC_CHECK_SIZEOF(very long, -1)
+AC_PTS_CHECK_SIZEOF(very long, -1)
 if test $ac_cv_sizeof_very_long = 8; then ac_cv_sizeof___int64=0; fi
-AC_CHECK_SIZEOF(__int64, -1)
+AC_PTS_CHECK_SIZEOF(__int64, -1)
 dnl ^^^ very long type doesn't exit in any C standard.
 
 dnl Imp: make these cached
@@ -110,11 +118,38 @@ fi
 AC_DEFINE_UNQUOTED(PTS_INT128_T, $ac_cv_pts_int128_t)
 ])
 
+dnl ripped from autoconf-2.13 (ruined by autoconf-2.50)
+dnl by pts@fazekas.hu at Wed Dec 11 12:33:53 CET 2002
+dnl AC_PTS_CHECK_SIZEOF(TYPE [, CROSS-SIZE])
+AC_DEFUN(AC_PTS_CHECK_SIZEOF,
+[changequote(<<, >>)dnl
+dnl The name to #define.
+define(<<AC_TYPE_NAME>>, translit(sizeof_$1, [a-z *], [A-Z_P]))dnl
+dnl The cache variable name.
+define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
+changequote([, ])dnl
+AC_MSG_CHECKING(size of $1)
+AC_CACHE_VAL(AC_CV_NAME,
+[AC_TRY_RUN([#include <stdio.h>
+#include <sys/types.h>
+int main() {
+  FILE *f=fopen("conftestval", "w");
+  if (!f) return 1;
+  fprintf(f, "%d\n", sizeof($1));
+  return 0;
+}], AC_CV_NAME=`cat conftestval`, AC_CV_NAME=0, ifelse([$2], , , AC_CV_NAME=$2))])dnl
+AC_MSG_RESULT($AC_CV_NAME)
+AC_DEFINE_UNQUOTED(AC_TYPE_NAME, $AC_CV_NAME)
+undefine([AC_TYPE_NAME])dnl
+undefine([AC_CV_NAME])dnl
+])
+
+
 
 AC_DEFUN([AC_PTS_CHECK_POINTERS],[
 AC_REQUIRE([AC_PTS_CHECK_INTEGRALS])
-AC_CHECK_SIZEOF(char *, -1)
-AC_CHECK_SIZEOF(void *, -1)
+AC_PTS_CHECK_SIZEOF(char *, -1)
+AC_PTS_CHECK_SIZEOF(void *, -1)
 dnl no need for checking for -1, AC_PTS_CHECK_INTEGRALS already did it
 AC_MSG_CHECKING(for an integral type to hold a ptr)
 AC_CACHE_VAL(ac_cv_pts_intp_t, [
@@ -220,7 +255,7 @@ int main
   if (ferror(f)) return 2; /* printf("\n"); */
   return 0;
 }],
-  [ac_cv_integral_type_$3=`cat conftestval`;
+  [ac_cv_integral_type_$3="`cat conftestval`";
       ],
   dnl vvv Imp: make this a macro
   [if test x"$2" = x; then AC_MSG_RESULT(not found); AC_MSG_ERROR(This is fatal.); fi
@@ -261,6 +296,24 @@ AC_DEFUN([AC_PTS_HAVE_PROTOTYPES], [
   fi
 ])
 
+dnl by pts@fazekas.hu at Wed Dec 11 12:09:14 CET 2002
+AC_DEFUN([AC_PTS_HAVE_STATIC_CONST], [
+  AC_CACHE_CHECK(whether c++ supports static const, ac_cv_pts_have_static_const, [
+    AC_TRY_COMPILE(
+      [#undef const
+class A { public: static const int i=1; };], [return A::i==0;],
+      ac_cv_pts_have_static_const=yes,
+      ac_cv_pts_have_static_const=no
+    )
+  ])
+  if test x"$ac_cv_pts_have_static_const" = xyes; then
+    AC_DEFINE(HAVE_STATIC_CONST)
+  fi
+])
+class A { static const int i=1; };
+
+
+
 dnl by pts@fazekas.hu at Fri Nov  2 13:15:27 CET 2001
 AC_DEFUN([AC_PTS_HAVE_STDC], [
 dnl Check for working standard C (also called as ANSI C)
@@ -268,14 +321,20 @@ dnl implies check for AC_PTS_HAVE_PROTOTYPES, AC_HEADER_STDC
   AC_REQUIRE([AC_HEADER_STDC])
   AC_REQUIRE([AC_PTS_HAVE_PROTOTYPES])
   AC_CACHE_CHECK(whether cc compiles standard C, ac_cv_pts_have_stdc, [
-    AC_EGREP_CPP(no, [
+    AC_EGREP_CPP(nope, [
 #if defined(__STDC__) && __STDC__
   /* note: the starting spaces are deliberate in the next line */
   #if 0
-   no
+    nope
   #endif
 #else
-  no
+#if defined(__cplusplus) && __cplusplus
+  #if 0
+    nope
+  #endif
+#else
+  nope
+#endif
 #endif
     ], ac_cv_pts_have_stdc=no, [
       if test x"$ac_cv_pts_have_prototypes" = xyes; then
@@ -359,10 +418,10 @@ dnl defines ac_cv_pts_string_header
   if test x"$ac_cv_pts_have_string" = xyes; then
     AC_DEFINE(HAVE_STRING)
   fi
-  CCBAK="$CC"
+  CC_bak="$CC"
   CC="${CC:-cc} -Werror"
   AC_PTS_CHECK_HEADER($ac_cv_pts_string_header.h, memcpy, memcpy_in_stringxs,  [char s[42]="X"; memcpy(s, "Hello, World!", 2); return *s!='H'; ])
-  CC="$CCBAK"
+  CC="$CC_bak"
   
   AC_CACHE_CHECK(whether memcmp and memcpy are built-in, ac_cv_pts_have_memcmpy_builtin, [
     ac_cv_pts_have_memcmpy_builtin=no
@@ -391,10 +450,24 @@ int main
   fi
 ])
 
+dnl by pts@fazekas.hu at Tue Sep  3 19:27:50 CEST 2002
+dnl g++-3.2: cc1plus: warning: ignoring command line option '-Wnested-externs'
+dnl Usage: AC_PTS_CHECK_IGNORING(nebfcmd,-Wnested-externs -Wbad-function-cast -Wmissing-declarations)
+AC_DEFUN([AC_PTS_CHECK_IGNORING], [
+  XTRA="$2"
+  CC_bak="$CC"   CC="${CC:-cc}  -Werror $2" 
+  CXX_bak="$CXX" CXX="${CXX:-c++} -Werror $2"
+  AC_CACHE_CHECK([for ignored $2],ac_cv_pts_ignoring_$1, [
+      AC_TRY_COMPILE([],[],
+          ac_cv_pts_ignoring_$1=no,ac_cv_pts_ignoring_$1=yes)])
+  CC="$CC_bak"
+  CXX="$CXX_bak"
+])
+
 dnl by pts@fazekas.hu at Fri Nov  2 15:05:27 CET 2001
 AC_DEFUN([AC_PTS_CHECK_MALLOC], [
 dnl never fails
-  AC_PTS_CHECK_HEADER(stdlib.h, malloc,   malloc_in_stdlib,  [char *p=malloc(42); if (p!=0) free(p); return p==0;])
+  AC_PTS_CHECK_HEADER(stdlib.h, malloc,   malloc_in_stdlib,  [char *p=(char*)malloc(42); if (p!=0) free((void*)p); return p==0;])
   if test x"$ac_cv_pts_malloc_in_stdlib" != xyes; then
     AC_PTS_CHECK_HEADER(malloc.h, malloc,   malloc_in_malloc,  [char *p=malloc(42); if (p!=0) free(p); return p==0;])
   fi
@@ -480,6 +553,70 @@ int main
     )
   ])
   AC_DEFINE_UNQUOTED(PTS_CFG_P_TMPDIR, $ac_cv_pts_cfg_p_tmpdir)
+])
+
+dnl by pts@fazekas.hu at Thu Dec 12 20:20:41 CET 2002
+AC_DEFUN([AC_PTS_HAVE_SYSTEMF], [
+  echo no-original >conftestval
+  AC_CACHE_CHECK(for working system(3), ac_cv_pts_systemf, [
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h> /* system() */
+
+int main
+#ifdef __STDC__
+(int argc, char **argv)
+#else
+(argc, argv) int argc; char **argv;
+#endif
+{ 
+  (void)argc;
+  (void)argv;
+  if (0!=system("echo t >conftestval && echo \"let  it\" be  e >conftestval")) {
+    FILE *f=fopen("conftestval","w");
+    if (f) {
+      fprintf(f,"runtime-error\n");
+      fclose(f);
+    }
+  }
+  return 0;
+}
+],    [ac_cv_pts_systemf="`cat conftestval`"; ac_cv_pts_systemf="${ac_cv_pts_systemf:-invalid}"],
+      [ac_cv_pts_systemf=compile-error], 
+      [AC_MSG_ERROR(cross compiling not supported by .._PTS_HAVE_VSNPRINTF)]
+    )
+    # echo "($ac_cv_pts_systemf)"
+    # if test x"$ac_cv_pts_systemf" = x'"let  it" be  e '; then
+    if test x"$ac_cv_pts_systemf" = x't  && echo "let  it" be  e '; then
+      # Win32 COMMAND.COM
+      ac_cv_pts_systemf=win32
+    elif test x"$ac_cv_pts_systemf" = x"let  it be e"; then
+      # UNIX /bin/sh
+      ac_cv_pts_systemf=unix
+    fi
+  ])
+  if test x"$ac_cv_pts_systemf" = xwin32; then
+    ac_cv_pts_have_systemf=yes
+    AC_DEFINE(HAVE_PTS_SYSTEMF)
+    AC_DEFINE(HAVE_PTS_SYSTEMF_WIN32)
+  elif test x"$ac_cv_pts_systemf" = xunix; then
+    ac_cv_pts_have_systemf=yes
+    AC_DEFINE(HAVE_PTS_SYSTEMF)
+    AC_DEFINE(HAVE_PTS_SYSTEMF_UNIX)
+  elif test x"$ac_cv_pts_systemf" = x"invalid"; then
+    ac_cv_pts_have_systemf=no
+  elif test x"$ac_cv_pts_systemf" = x"compile-error"; then
+    ac_cv_pts_have_systemf=no
+  elif test x"$ac_cv_pts_systemf" = x"runtime-error"; then
+    ac_cv_pts_have_systemf=no
+  elif test x"$ac_cv_pts_systemf" = x"no-original"; then
+    ac_cv_pts_have_systemf=no
+  else
+    ac_cv_pts_have_systemf=yes
+    # ac_cv_pts_systemf=other
+    AC_DEFINE(HAVE_PTS_SYSTEMF)
+    AC_DEFINE(HAVE_PTS_SYSTEMF_OTHER)
+  fi
 ])
 
 dnl by pts@fazekas.hu at Fri Mar 22 16:40:22 CET 2002
@@ -581,9 +718,21 @@ dnl  AC_DEFINE_UNQUOTED(HAVE_PTS_POPEN_, $ac_cv_pts_have_popen_)
 ])
 
 dnl by pts@fazekas.hu at Fri Mar 22 19:36:26 CET 2002
+dnl huge BUGFIX at Tue Jun 11 13:38:30 CEST 2002
+dnl on kempelen: ac_cv_pts_vsnprintf=bad
 AC_DEFUN([AC_PTS_HAVE_VSNPRINTF], [
-  AC_CACHE_CHECK(for working vsnprintf, ac_cv_pts_have_vsnprintf, [
+  AC_CACHE_CHECK(for working vsnprintf, ac_cv_pts_vsnprintf, [
     AC_TRY_RUN([
+#if 0 /* autoconf-2.54 */
+  extern "C" void std::exit (int) throw (); using std::exit;
+  extern "C" void std::exit (int); using std::exit;
+  extern "C" void exit (int) throw ();
+  extern "C" void exit (int);
+  void exit (int);
+#endif
+#ifdef __cplusplus
+extern "C" void exit(int);
+#endif                     
 #define _BSD_SOURCE 1 /* vsnprintf */
 #define _POSIX_SOURCE 1
 #define _POSIX_C_SOURCE 2
@@ -591,16 +740,23 @@ AC_DEFUN([AC_PTS_HAVE_VSNPRINTF], [
 #include <stdarg.h>
 #include <string.h>
 
-static void myprintf(int max, char *dstr, char *fmt, ...) {
+static int myprintf(int max, char *dstr, char *fmt, ...) {
+  int i;
   va_list ap;
   #if defined(__STDC__)
     va_start(ap, fmt);
   #else
     va_start(ap);
   #endif
-  vsnprintf(dstr, max, fmt, ap);
+  i=vsnprintf(dstr, max, fmt, ap);
   va_end(ap);
+  return i;
 }
+
+int c99t[]={13,9,10,10,10}, oldt[]={-1,9,-1,0,-1}, sun99t[]={13,9,10,-1,10};
+/* wincrtt[]={-1,9,10,-1,-1}, but it modifies the string in a completely
+ * bogus way (passes 1 test of 5)
+ */
 
 int main
 #ifdef __STDC__
@@ -610,18 +766,62 @@ int main
 #endif
 { char buf[40];
   int i;
-  for (i=0;i<sizeof(buf);i++) buf[i]='X';
-  buf[sizeof(buf)-1]='\0';
-  myprintf(10, buf, "%s-%ld", "Alma", -1234567L);
-  return 0==strcmp(buf, "Alma--1234");
+  int g[5], gg;
+  int *t=oldt;
+  FILE *f=fopen("conftestval","w");
+  (void)argc;
+  (void)argv;
+
+  if (f) {
+    for (i=0;i<(int)sizeof(buf)-1;i++) buf[i]='X';   buf[i]='\0';
+    i=myprintf(10, buf, "%s-%ld", "Alma", -1234567L);
+    if (i==c99t[0]) t=c99t; /* oldt[0]!=c99t[0] */
+    g[0]=(i==t[0] && 0==memcmp(buf, "Alma--123\0X", 11));
+    /* printf("(%s) %d %d\n", buf, i, g[0]); */
+
+    for (i=0;i<(int)sizeof(buf)-1;i++) buf[i]='Y';   buf[i]='\0';
+    i=myprintf(10, buf, "%s-%ld", "Alma", -123L);
+    g[1]=(i==t[1] && 0==memcmp(buf, "Alma--123\0Y", 11));
+    /* printf("(%s) %d %d\n", buf, i, g[1]); */
+
+    for (i=0;i<(int)sizeof(buf)-1;i++) buf[i]='Z';   buf[i]='\0';
+    i=myprintf(10, buf, "%s-%ld", "Alma", -1234L);
+    g[2]=(i==t[2] && 0==memcmp(buf, "Alma--123\0Z", 11));
+    /* printf("(%s) %d %d\n", buf, i, g[2]); */
+
+    buf[0]='#';
+    i=myprintf(0, buf, "%s-%ld", "Alma", -1234L);
+    if (t==c99t && i==sun99t[3]) t=sun99t; 
+    g[3]=(i==t[3] && buf[0]=='#');
+    /* printf("(%s) %d %d\n", buf, i, g[3]); */
+
+    buf[0]=buf[1]='$';
+    i=myprintf(1, buf, "%s-%ld", "Alma", -1234L);
+    g[4]=(i==t[4] && buf[0]=='\0' && buf[1]=='$');
+    /* printf("(%s) %d %d\n", buf, i, g[4]); */
+
+    gg=g[0] && g[1] && g[2] && g[3] && g[4];
+    fputs(!gg ? "bad\n" : t==oldt ? "old\n" : t==sun99t ? "sun99\n" : "c99\n", f);
+    fclose(f);
+  }
+  return 0;
 }
-],    [ac_cv_pts_have_vsnprintf=yes],
-      [ac_cv_pts_have_vsnprintf=no], 
+],    [ac_cv_pts_vsnprintf="`cat conftestval`"; ac_cv_pts_vsnprintf="${ac_cv_pts_vsnprintf:-invalid}"],
+      [ac_cv_pts_vsnprintf=no], 
       [AC_MSG_ERROR(cross compiling not supported by .._PTS_HAVE_VSNPRINTF)]
     )
   ])
-  if test x"$ac_cv_pts_have_vsnprintf" = xyes; then
+  if test x"$ac_cv_pts_vsnprintf" = xold; then
+    ac_cv_pts_have_vsnprintf=yes
     AC_DEFINE(HAVE_PTS_VSNPRINTF)
+    AC_DEFINE(HAVE_PTS_VSNPRINTF_OLD)
+  elif test x"$ac_cv_pts_have_vsnprintf" = xc99; then
+    ac_cv_pts_have_vsnprintf=yes
+    AC_DEFINE(HAVE_PTS_VSNPRINTF)
+    AC_DEFINE(HAVE_PTS_VSNPRINTF_C99)
+  else
+    ac_cv_pts_have_vsnprintf=no
+    ac_cv_pts_vsnprintf=no
   fi
 ])
 
@@ -721,7 +921,9 @@ dnl by pts@fazekas.hu at Thu Apr  4 13:25:20 CEST 2002
 dnl Keeps conftest*
 AC_DEFUN(AC_PTS_TRY_COMPILE_NORM,
 [cat > conftest.$ac_ext <<EOF
-ifelse(AC_LANG, [FORTRAN77],
+dnl vvv Dat: breaks newer autoconfs :-(
+dnl ifelse(AC_LANG, [FORTRAN77],
+ifelse(not_AC_LANG, [FORTRAN77],
 [      program main
 [$2]
       end],
@@ -754,33 +956,57 @@ AC_DEFUN([AC_PTS_GCC_LINKS_CXX], [
   AC_REQUIRE([AC_PROG_CXX])
   AC_CACHE_CHECK(whether gcc can link C++ code, ac_cv_pts_gcc_links_cxx, [
     CXX_saved="$CXX"
+    LIBS_saved="$LIBS"
+    CXX_new="$CXX"
     ac_ext_saved="$ac_ext"
     AC_PTS_TRY_COMPILE_NORM([
       #include <stdio.h>
-      struct B            { virtual int f()=0; };
+      struct B            { virtual int f()=0; int x() { return f(); } };
       struct C1: public B { virtual int f() {return 1;}};
-      struct C0: public B { virtual int f() {return 2;}};
+      struct C2: public B { virtual int f() {return 2;}};
+      C1 global; /* global.x() will cause segfault in i386-uclibc-gcc */
     ],[
-      B *p=(ferror(stderr))?new C1():new C0(); /* Imp: argc... */
-      /* if (p==0) throw long(42); */
-      return p->f();
+      /* vvv (B*) cast added for gcc-3.1 */
+      B *p=(ferror(stderr))?(B*)new C1():(B*)new C2(); /* Imp: argc... */
+      /* if (p==0) throw long(42); */ /* doesn't work with -fno-rtti */
+      int ok2=p->x()==2;
+      delete p;
+      return !(ok2 && global.x()==1);
     ],[
-      CXX=gcc
+      case x"$CC" in
+        xgcc-*) CXX="$CC" ;; # gcc-3.2
+        x*-gcc-*) CXX="$CC" ;; # 
+        x*-gcc) CXX="$CC" ;; # i386-uclibc-gcc
+        *) CXX=gcc ;;
+      esac
+      CXX_new="$CXX"
       ac_ext="$ac_objext"
-      # bash
-      if AC_TRY_EVAL(ac_link) && test -s conftest${ac_exeext}
-      then ac_cv_pts_gcc_links_cxx=yes;
-      else ac_cv_pts_gcc_links_cxx=no; fi
+      if AC_TRY_EVAL(ac_link) && test -s conftest${ac_exeext} && ./conftest${ac_exeext}
+      then ac_cv_pts_gcc_links_cxx=yes
+      else
+        LIBS="$LIBS_saved c_lgcc.cpp"
+        if AC_TRY_EVAL(ac_link) && test -s conftest${ac_exeext} && ./conftest${ac_exeext}
+        then ac_cv_pts_gcc_links_cxx=yes-with-help
+        else 
+          LIBS="$LIBS_saved c_lgcc3.cpp"
+          if AC_TRY_EVAL(ac_link) && test -s conftest${ac_exeext} && ./conftest${ac_exeext}
+          then ac_cv_pts_gcc_links_cxx=yes-with-help3
+          else ac_cv_pts_gcc_links_cxx=no; CXX_new="$CXX_saved"; fi
+        fi
+      fi
     ],[ac_cv_pts_gcc_links_cxx=compilation-failed])
     CXX="$CXX_saved"
+    LIBS="$LIBS_saved"
     ac_ext="$ac_ext_saved"
   ])
-  case x"$ac_cv_pts_gcc_links_cxx" in
-    xyes) LDXX=gcc ;;
-    xno)  LDXX="$CXX" ;;
-    *)   AC_MSG_ERROR([Compilation failed, aborting.]) ;;
-  esac
   AC_SUBST(LDXX)
+  case x"$ac_cv_pts_gcc_links_cxx" in
+    xyes-with-help) LDXX="$CXX_new"; AC_DEFINE(HAVE_PTS_C_LGCC_CPP_REQUIRED) ;;
+    xyes-with-help3) LDXX="$CXX_new"; AC_DEFINE(HAVE_PTS_C_LGCC3_CPP_REQUIRED) ;;
+    xyes) LDXX="$CXX_new" ;;
+    xno)  LDXX="$CXX_new" ;;
+    *)    AC_MSG_ERROR([Compilation failed, aborting.]) ;;
+  esac
 ])
 
 dnl by pts@fazekas.hu at Sat Apr  6 10:56:48 CEST 2002
@@ -871,14 +1097,98 @@ AC_TRY_RUN(
 #if !defined(__STDC__) || __STDC__ != 1
 #define volatile
 #endif
-main() {
-  volatile char c = 255; exit(c < 0);
+int main() {
+  volatile char c = 255; return(c < 0);
 }], ac_cv_c_char_unsigned=yes, ac_cv_c_char_unsigned=no,
   [AC_MSG_ERROR(cross compiling not supported by .._PTS_C_CHAR_UNSIGNED)])
 fi])
 if test $ac_cv_c_char_unsigned = yes && test "$GCC" != yes; then
   AC_DEFINE(__CHAR_UNSIGNED__)
 fi
+])
+
+dnl by pts@fazekas.hu at Sun Apr 14 22:08:04 CEST 2002
+
+dnl Ripped from autoconf's acgeneral.m4. Tests with `test -x'.
+dnl AC_PTS_PATH_XPROG(VARIABLE, PROG-TO-CHECK-FOR [, VALUE-IF-NOT-FOUND [, PATH]])
+AC_DEFUN(AC_PTS_PATH_XPROG,
+[# Extract the first word of "$2", so it can be a program name with args.
+set dummy $2; ac_word=[$]2
+AC_MSG_CHECKING([for $ac_word])
+AC_CACHE_VAL(ac_cv_path_$1,
+[case "[$]$1" in
+  /*)
+  ac_cv_path_$1="[$]$1" # Let the user override the test with a path.
+  ;;
+  ?:/*)			 
+  ac_cv_path_$1="[$]$1" # Let the user override the test with a dos path.
+  ;;
+  *)
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+dnl $ac_dummy forces splitting on constant user-supplied paths.
+dnl POSIX.2 word splitting is done only on the output of word expansions,
+dnl not every word.  This closes a longstanding sh security hole.
+  ac_dummy="ifelse([$4], , $PATH, [$4])"
+  for ac_dir in $ac_dummy; do 
+    test -z "$ac_dir" && ac_dir=.
+    if test -x $ac_dir/$ac_word; then
+      ac_cv_path_$1="$ac_dir/$ac_word"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+dnl If no 3rd arg is given, leave the cache variable unset,
+dnl so AC_PATH_PROGS will keep looking.
+ifelse([$3], , , [  test -z "[$]ac_cv_path_$1" && ac_cv_path_$1="$3"
+])dnl
+  ;;
+esac])dnl
+$1="$ac_cv_path_$1"
+if test -n "[$]$1"; then
+  AC_MSG_RESULT([$]$1)
+else
+  AC_MSG_RESULT(no)
+fi
+AC_SUBST($1)dnl
+])
+
+dnl by pts@fazekas.hu at Sun Apr 14 21:50:13 CEST 2002
+
+dnl Usage: AC_PTS_WARN_PROG(zip, [zip might become useful for /Compression/ZIP])
+AC_DEFUN(AC_PTS_WARN_PROG,
+[AC_PTS_PATH_XPROG(pts_$1, $1)
+if test x"$ac_cv_path_pts_$1" = x; then
+  AC_MSG_WARN($1 would provide increased functionality to this program:)
+  AC_MSG_WARN($2)
+fi
+])
+dnl Usage: AC_PTS_ERR_PROG(make, [make is required for compiling this program])
+AC_DEFUN(AC_PTS_ERR_PROG,
+[AC_PTS_PATH_XPROG(pts_$1, $1)
+if test x"$ac_cv_path_pts_$1" = x; then
+  AC_MSG_WARN($1 is required:)
+  AC_MSG_ERROR($2)
+fi
+])
+
+dnl by pts@fazekas.hu at Sat Jun  1 15:00:44 CEST 2002
+dnl ac_n=... autoconf2.13 -> autoconf2.50
+dnl Usage: AC_PTS_RUN_OK(CMDLINE, ACTION-OF-EXITCODE-0, ACTION-IF-ERROR)
+AC_DEFUN(AC_PTS_RUN_OK,
+[ac_n="${ac_n:-$ECHO_N}"
+echo $ac_n "running $1""... $ac_c" 1>&AC_FD_MSG
+echo "configure:__oline__: running $1" >&AC_FD_CC
+if >&AC_FD_CC 2>&AC_FD_CC $1; then :
+  AC_MSG_RESULT(ok)
+  $2
+else
+  AC_MSG_RESULT(error)
+  $3
+fi
+])
+
+dnl by pts@fazekas.hu at Sat Jun  1 15:13:36 CEST 2002
+AC_DEFUN(AC_PTS_OK, [echo "configure:__oline__: all OK" >&AC_FD_CC
 ])
 
 dnl __EOF__

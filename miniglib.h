@@ -6,7 +6,7 @@
 #ifndef MINIGLIB_H
 #define MINIGLIB_H
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma interface
 #endif
 
@@ -109,7 +109,7 @@ EXTERN_C char *g_strdup(char const*str);
 /** May return NULL. */
 EXTERN_C void *g_malloc0(gsize_t len);
 EXTERN_C void *g_malloc(gsize_t len);
-EXTERN_C void g_free(void /*const*/ *p);
+EXTERN_C void g_free(void /*const*/ const *p);
 #define g_new(type,nelems) ((type*)g_malloc((nelems)*sizeof(type))) /* Imp: check retval */
 #undef  _
 #define _(str) str /* cheap gettext LC_MESSAGE replacement :-) */

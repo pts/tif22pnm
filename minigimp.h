@@ -5,7 +5,7 @@
 #ifndef MINIGIMP_H
 #define MINIGIMP_H
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma interface
 #endif
 

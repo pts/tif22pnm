@@ -1,0 +1,26 @@
+Source: tif22pnm
+Section: unknown
+Priority: optional
+Maintainer: Szabó Péter <pts@fazekas.hu>
+Standards-Version: 3.2.1
+Build-Depends: debmake, libtiff-dev, (libpng-dev | libpng2-dev | libpng3-dev)
+
+Package: tif22pnm
+Architecture: i386
+Depends: ${shlibs:Depends}
+Description: an extremely compatible between TIFF and PNM converter
+ tif22pnm is a command line utility that converts between TIFF sampled images
+ and PNM images (both directions), using the libtiff library, but not using
+ NetPBM. tif22pnm is similar to tifftopnm utility in the NetPBM distribution,
+ but tif22pnm handles a wider range of TIFF files and it is able to output
+ the alpha channel as a PBM or PGM file. png22pnm, a converter from PNG to
+ PNM is also bundled into the distribution
+
+Package: png22pnm
+Architecture: i386
+Depends: ${shlibs:Depends}
+Description: an extremely compatible PNG to PNM converter
+ png22pnm is a command line utility that converts from PNG sampled images
+ to PNM images, using the libpng library, but not using NetPBM. tif22pnm is
+ similar to pngtopnm utility in the NetPBM distribution, but tif22pnm
+ doesn't use NetPBM.

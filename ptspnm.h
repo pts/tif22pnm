@@ -5,7 +5,7 @@
 #ifndef PTSPNM_H
 #define PTSPNM_H
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma interface
 #endif
 

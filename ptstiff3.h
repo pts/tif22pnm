@@ -5,7 +5,7 @@
 #ifndef PTSTIFF3_H
 #define PTSTIFF3_H
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__cplusplus)
 #pragma interface
 #endif
 
