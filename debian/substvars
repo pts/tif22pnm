@@ -1,1 +1,1 @@
-shlibs:Depends=libc6 (>= 2.3.1-1), libtiff3g
+shlibs:Depends=libc6 (>= 2.3.2.ds1-4), libtiff3g

@@ -56,8 +56,9 @@ checkroot:
 source-here:
 	rm -rf debsrc
 	mkdir -p debsrc/debian
-	cp -a $(wildcard $(addprefix debian/,README.debian docs changelog control copyright dirs rules prerm postrm postinst preinst)) debsrc/debian
-	$(MAKEF) install-debsrc
+	cp -a $(wildcard $(addprefix debian/,README.debian docs changelog control copyright dirs rules prerm postrm postinst preinst)) debsrc/debian/
+	cp -a debian/README.debian debian/changelog debian/control debian/copyright debian/dirs debian/png22pnm.docs debian/rules debsrc/debian/
+	cp -a files README minigimp.c miniglib.c ptspnm.c ptstiff3.c tif22pnm.c png22pnm.c minigimp.h miniglib.h ptspnm.h ptstiff3.h aclocal.m4 configure.in configure do.sh config.h.in cc_help.sh.in COPYING Makefile debsrc/
 	DIR="`<debian/changelog perl -ne 'print if s@^(\S+) [(]([^)]+?)(?:-\d+)?[)].*@$$1-$$2@;last'`" && \
 	  test ! -d "$$DIR" && \
 	  mv debsrc "$$DIR" && \
