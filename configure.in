@@ -1,0 +1,130 @@
+dnl
+dnl configure.in -- for sam2p
+dnl by pts@fazekas.hu at Thu Nov  1 22:46:51 CET 2001
+dnl Mon Mar  4 08:56:35 CET 2002
+dnl
+dnl Dat: autoheader stops reading the file at the 1st error
+dnl Imp: concat (TCL, Ruby)
+dnl Imp: stringify
+dnl Imp: C and C++
+dnl Imp: warnings
+dnl OK : traditional C
+dnl Imp: ctype
+dnl Imp: check for socklen_t
+
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT(tif22pnm.c)
+AC_CONFIG_HEADER(config.h)
+AC_PTS_ENABLE_DEBUG
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_LANG_C
+CFLAGS=" "
+dnl ^^^ set it to non-empty, so AC_PROG_CXX won't include `-g'
+dnl AC_PROG_CXX
+dnl AC_PTS_PROG_CFLAGS(fs, -fsigned-char)
+dnl AC_PTS_PROG_CFLAGS(nrne, -fno-rtti -fno-exceptions)
+dnl ^^^ `g++ -fno-rtti': disables `typeinfo' (??) and run-time type identification
+dnl ^^^ `g++ -fno-exceptions': disables catch and throw
+AC_PTS_PROG_CFLAGSB(apwaw, -ansi -pedantic -Wall -W)
+AC_PTS_PROG_CFLAGSB(ptscopts, -Wstrict-prototypes dnl
+-Wtraditional -Wnested-externs -Wpointer-arith -Wcast-align -Winline dnl
+-Wcast-qual -Wmissing-prototypes dnl
+-Wmissing-declarations)
+dnl vvv g++ version egcs-2.91.60 + gcc version 2.7.2.3 requires
+dnl     `g++ -fno-rtti -fno-exceptions' for AC_PTS_GCC_LINKS_CXX to be `yes'
+
+AC_SUBST(GFLAG)
+if test x"$ac_cv_prog_cc_g" = xyes; then GFLAG=-g; else GFLAG=""; fi
+dnl ac_cv_prog_cxx_g also
+
+
+dnl Checks for C language features
+AC_PTS_HAVE_STDC
+AC_PTS_HAVE_SWITCH_ENUM_BUG
+AC_PTS_ENSURE_ASCII_SYSTEM
+AC_C_CONST
+AC_PTS_C_VOLATILE
+
+dnl Checks for libraries.
+
+AC_MSG_CHECKING(for --with-libtiff-ldir)
+AC_ARG_WITH(libtiff_ldir,
+[  --with-libtiff-ldir=DIR DIR contains libtiff*.so],
+[], [])
+AC_MSG_RESULT(${with_libtiff_ldir-none})
+if test x"$with_libtiff_ldir" != x; then
+if test x"$with_libtiff_ldir" != xno && test -d "$with_libtiff_ldir"
+then LDFLAGS="$LDFLAGS -L$with_libtiff_ldir"
+else AC_ERROR(proper usage is --with-libtiff-ldir=DIR); fi
+fi
+
+AC_MSG_CHECKING(for --with-libtiff-idir)
+AC_ARG_WITH(libtiff_idir,
+[  --with-libtiff-idir=DIR DIR contains tiffio.h],
+[], [])
+AC_MSG_RESULT(${with_libtiff_idir-none})
+if test x"$with_libtiff_idir" != x; then
+if test x"$with_libtiff_idir" != xno && test -f "$with_libtiff_idir"/tiffio.h
+then CPPFLAGS="$CPPFLAGS -I$with_libtiff_idir"
+else AC_ERROR(the DIR --with-libtiff-idir should contain tiffio.h); fi
+fi
+
+dnl vvv "tiff -lm" is required on Sun Solaris
+AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm"], [],
+  AC_MSG_ERROR(libtiff required))
+
+dnl Checks for header files.
+dnl AC_CHECK_HEADERS(stdio.h); exit 42
+dnl AC_CHECK_HEADERS(stdio.h stdlib.h unistd.h string.h strings.h)
+
+AC_PTS_CHECK_HEADER(stdio.h,  sprintf, sprintf_in_stdio, [char s[42]="X"; sprintf(s, "Hello, World!"); return *s!='H';] )
+AC_PTS_CHECK_HEADER(stdlib.h, atoi,    atoi_in_stdlib,   [return atoi("42")!=42;])
+AC_PTS_CHECK_HEADER(unistd.h, write,   write_in_unistd,  [return write(1,"what",0)!=0;])
+dnl AC_PTS_CHECK_HEADER(stdlib.h, system,  system_in_stdlib, [/*>255 OK*/return system("true")!=0;])
+AC_PTS_CHECK_STRING
+dnl AC_PTS_CHECK_MALLOC
+dnl AC_FUNC_ALLOCA
+
+dnl Checks for integral/pointer sizes.
+
+dnl AC_C_CHAR_UNSIGNED
+
+AC_REQUIRE([AC_PTS_CHECK_POINTERS])
+
+AC_REQUIRE([AC_PTS_CHECK_INTEGRALS])
+dnl Dat: POINTERS, INTEGRALS order would result in `(cached)' without AC_REQUIRE
+
+dnl ac_cv_alma=korte # Dat: automagically inserted into config.cache
+dnl AC_DEFINE(PTS_INT128_T, 42) # Dat: includes to conftest.h, config.h
+
+dnl cat confdefs.h # Dat: contains already AC_DEFINE()d symbols
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_SIZE_T
+AC_PTS_CHECK_INTEGRAL_TYPE(size_t, unsigned)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(time_t, unsigned)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(mode_t, int)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(off_t, long)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(pid_t, int)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(dev_t, unsigned long)
+dnl dnl ^^^ Dat: unsigned PTS_INT64_T on Linux i386
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(uid_t, unsigned)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(gid_t, unsigned)
+dnl AC_PTS_CHECK_INTEGRAL_TYPE(size_tt, signed)
+dnl Dat: AC_TYPE_SIGNAL is OK, there should be no AC_PTS_CHECK_* substitute
+dnl AC_PTS_TYPE_GETGROUPS
+dnl ^^^ doesn't work wth CPPFLAGS=-traditional
+AC_CHECK_SIZEOF(bool, -1)
+dnl ^^^ Dat: 0 #if (PC: 1, Digital Unix: 8, Solaris: 4)
+
+dnl Checks for library functions.
+
+dnl AC_OUTPUT(config.h) -- bad!!
+dnl skipping AC_OUTPUT -- bad!!
+
+dnl AC_OUTPUT(Makehelp)
+AC_OUTPUT(cc_help.sh)
+

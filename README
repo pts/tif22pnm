@@ -1,0 +1,81 @@
+This is the README for tif22pnm.c.
+by pts@fazekas.hu at Sun Apr 14 22:56:35 CEST 2002
+Tue Jun 11 18:10:35 CEST 2002
+v0.06 at Mon Oct  7 01:35:40 CEST 2002
+
+tif22pnm is a command line utility that converts between TIFF sampled images
+and PNM images (both directions), using the libtiff library, but not using
+NetPBM. tif22pnm is similar to tifftopnm utility in the NetPBM distribution,
+but tif22pnm handles a wider range of TIFF files and it is able to output
+the alpha channel as a PBM or PGM file.
+
+Caveat: tiff2pnm v0.07 contains >1000 lines of untested code. The author
+wants to improve the software, and he welcomes bug reports. The author has
+tested v0.07 with around 20 very different input files, and it worked. More
+thorough testing seems to be necessary.
+
+Unique advantages (over any other TIFF to PNM converter):
+
+-- handles all kinds of compressed TIFF files libtiff can cope with
+   (tifftopnm doesn't)
+-- handles all kinds of compressed TIFF files GIMP 1.3 can cope with, plus
+   more (tifftopnm, GIMP 1.3 doesn't)
+-- handles all kinds of color spaces libtiff can cope with
+   (tifftopnm doesn't)
+-- handles TIFF/JPEG input files correctly (tifftopnm doesn't, GIMP 1.0 
+   doesn't, xv doesn't, ImageMagick doesn't, GIMP 1.3 does)
+-- automatically writes a smaller file (PBM < PGM < PPM) if image pixels
+   make it possible
+
+Compilation
+~~~~~~~~~~~
+	./configure
+	./do.sh compile
+
+Goal
+~~~~
+The author wants tif22pnm to be able to read a vide range of image formats
+(not just TIFF and PNM), including corrupted image files. In the future
+tif22pnm should support many output formats, but only few compression
+methods. If you want tight output and full PostScript and PDF support,
+please try sam2p:
+
+	http://www.inf.bme.hu/~pts/sam2p/
+
+Installation
+~~~~~~~~~~~~
+As root,
+
+	cp tif22pnm /usr/local/bin
+
+Usage
+~~~~~
+	$ tiff2pnm
+	This is tif22pnm v0.07: TIFF <-> PNM converter, by pts@fazekas.hu
+	Usage: ./tif22pnm [options] [--] in.img [out.img]
+	Options are:
+	-headerdump
+	-rgb   opaque RGB, alpha associated to black background (default)
+	-rgbi  RGB, ignore alpha
+	-rgba  RGB with associated alpha (black background)
+	-rgbu  RGB with unassociated alpha
+	-onlya alpha, ignore RGB
+	-text
+
+Legal stuff
+~~~~~~~~~~~
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+__END__
