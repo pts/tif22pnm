@@ -40,7 +40,11 @@
 
 #include <math.h>
 #include <png.h>	/* includes zlib.h and setjmp.h */
+#if 0
 #define VERSION "p2.37.4 (5 December 1999) +netpbm"
+#else
+#define VERSION "0.11"
+#endif
 
 /**** pts ****/
 #define PBMPLUS_RAWBITS 1

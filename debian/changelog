@@ -1,11 +1,25 @@
+tif22pnm (0.11-1) unstable; urgency=low
+
+  * Win32 serious BUGFIX.
+
+ -- Szabó Péter <pts@math.bme.hu>  Tue, 18 Mar 2003 17:13:07 +0100
+
+tif22pnm (0.10-1) unstable; urgency=low
+
+  * png22pnm, Debian package, CVS merge
+
+ -- Szabó Péter <pts@math.bme.hu>  Wed,  5 Feb 2003 21:26:12 +0100
+
 tif22pnm (0.09-1) unstable; urgency=low
 
-  * png22pnm
+  * integrated png22pnm, working Debian package
 
  -- Szabó Péter <pts@math.bme.hu>  Fri, 17 Jan 2003 20:15:24 +0100
 
 tif22pnm (0.08-1) unstable; urgency=low
 
   * Initial release.
+
+  * works on Win32 + MinGW
 
  -- Szabó Péter <pts@math.bme.hu>  Fri, 17 Jan 2003 19:39:34 +0100

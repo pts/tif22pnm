@@ -45,7 +45,7 @@
 #endif
 
 #define PRODUCT "tif22pnm"
-#define VERSION "0.10"
+#define VERSION "0.11"
 
 /* --- string manipulation */
 
