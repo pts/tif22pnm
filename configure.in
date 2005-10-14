@@ -112,7 +112,7 @@ if test xmissing != x"$LIBS_TIFF"; then
 LIBS=""
 dnl vvv "tiff -lm" is required on Sun Solaris
 dnl vvv "tiff -lm -lz -ljpeg" is required by Win32 MinGW
-AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm" "tiff -lm -lz -ljpeg"],
+AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm" "tiff -lm -lz" "tiff -lm -lz -ljpeg"],
   [LIBS_TIFF="$LIBS"], [LIBS_TIFF=missing])
 dnl AC_MSG_ERROR(libtiff required))
 fi
