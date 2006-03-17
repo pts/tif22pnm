@@ -1,5 +1,5 @@
 #! /bin/bash --
-####
+#
 # do.sh, formerly compile.sh for reTCP
 # by pts@inf.bme.hu at Thu Mar  7 17:48:45 CET 2002
 # Sun Mar 31 18:38:11 CEST 2002
