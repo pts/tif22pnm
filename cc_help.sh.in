@@ -1,6 +1,7 @@
 if test x"$CC" = x; then
   CC='@CC@'
 fi
+prefix='@prefix@'
 LD='@CC@'
 LIBS_PNG='@LIBS_PNG@'
 LIBS_TIFF='@LIBS_TIFF@'
