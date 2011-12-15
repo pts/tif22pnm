@@ -783,7 +783,11 @@ FILE *tfp;
             (info_ptr->valid & PNG_INFO_tRNS)) {
           trans_mix = TRUE;
           for (i = 0 ; i < info_ptr->num_trans ; i++)
+#if (PNG_LIBPNG_VER < 10400)
             if (info_ptr->trans[i] != 0 && info_ptr->trans[i] != 255) {
+#else
+            if (info_ptr->trans_alpha[i] != 0 && info_ptr->trans_alpha[i] != 255) {
+#endif
               trans_mix = FALSE;
               break;
             }
@@ -932,7 +936,11 @@ FILE *tfp;
         pnm_type = PBM_TYPE;
         if (info_ptr->valid & PNG_INFO_tRNS) {
           for (i = 0 ; i < info_ptr->num_trans ; i++) {
+#if (PNG_LIBPNG_VER < 10400)
             if (info_ptr->trans[i] != 0 && info_ptr->trans[i] != maxval) {
+#else
+            if (info_ptr->trans_alpha[i] != 0 && info_ptr->trans_alpha[i] != maxval) {
+#endif
               pnm_type = PGM_TYPE;
               break;
             }
@@ -1009,7 +1017,11 @@ FILE *tfp;
         case PNG_COLOR_TYPE_GRAY:
           store_pixel (pnm_pixel, c, c, c,
 		((info_ptr->valid & PNG_INFO_tRNS) &&
+#if (PNG_LIBPNG_VER < 10400)
 		 (c == gamma_correct (info_ptr->trans_values.gray, totalgamma))) ?
+#else
+		 (c == gamma_correct (info_ptr->trans_color.gray, totalgamma))) ?
+#endif
 			0 : maxval);
           break;
 
@@ -1023,7 +1035,11 @@ FILE *tfp;
                        info_ptr->palette[c].green, info_ptr->palette[c].blue,
                        (info_ptr->valid & PNG_INFO_tRNS) &&
                         c<info_ptr->num_trans ?
+#if (PNG_LIBPNG_VER < 10400)
                         info_ptr->trans[c] : maxval);
+#else
+                        info_ptr->trans_alpha[c] : maxval);
+#endif
           break;
 
         case PNG_COLOR_TYPE_RGB:
@@ -1031,9 +1047,15 @@ FILE *tfp;
           c3 = get_png_val (png_pixel);
           store_pixel (pnm_pixel, c, c2, c3,
 		((info_ptr->valid & PNG_INFO_tRNS) &&
+#if (PNG_LIBPNG_VER < 10400)
 		 (c  == gamma_correct (info_ptr->trans_values.red, totalgamma)) &&
 		 (c2 == gamma_correct (info_ptr->trans_values.green, totalgamma)) &&
 		 (c3 == gamma_correct (info_ptr->trans_values.blue, totalgamma))) ?
+#else
+		 (c  == gamma_correct (info_ptr->trans_color.red, totalgamma)) &&
+		 (c2 == gamma_correct (info_ptr->trans_color.green, totalgamma)) &&
+		 (c3 == gamma_correct (info_ptr->trans_color.blue, totalgamma))) ?
+#endif
 			0 : maxval);
           break;
 
