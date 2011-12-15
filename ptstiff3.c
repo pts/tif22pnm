@@ -785,19 +785,19 @@ load_rgba (TIFF *tif, channel_data *channel)
 {
   uint32 imageWidth, imageLength;
   uint32 row;
-  gulong *buffer;
+  guchar *buffer;
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &imageWidth);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &imageLength);
 
   gimp_pixel_rgn_init (&(channel[0].pixel_rgn), channel[0].drawable,
                           0, 0, imageWidth, imageLength, TRUE, FALSE);
-  buffer = g_new(gulong, imageWidth * imageLength);
-  channel[0].pixels = (guchar*) buffer;
+  buffer = g_new(guchar, 4 * imageWidth * imageLength);
+  channel[0].pixels = buffer;
   if (buffer == NULL) {
     g_message("TIFF Unable to allocate temporary buffer\n");
   }
-  if (!TIFFReadRGBAImage(tif, imageWidth, imageLength, buffer, 0))
+  if (!TIFFReadRGBAImage(tif, imageWidth, imageLength, (void*)buffer, 0))
     g_message("TIFF Unsupported layout, no RGBA loader\n");
 
   for (row = 0; row < imageLength; ++row) { /* TIFF is in inverse row order */

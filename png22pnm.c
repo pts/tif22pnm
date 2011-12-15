@@ -966,9 +966,9 @@ FILE *tfp;
     }
   }
 
-  if ((pnm_type == PGM_TYPE) && (maxval > PGM_OVERALLMAXVAL))
+  if ((pnm_type == PGM_TYPE) && (maxval >= PGM_OVERALLMAXVAL))
     maxmaxval = PGM_OVERALLMAXVAL;
-  else if ((pnm_type == PPM_TYPE) && (maxval > PPM_OVERALLMAXVAL))
+  else if ((pnm_type == PPM_TYPE) && (maxval >= PPM_OVERALLMAXVAL))
     maxmaxval = PPM_OVERALLMAXVAL;
   else maxmaxval = maxval;
 

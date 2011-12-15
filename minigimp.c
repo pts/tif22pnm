@@ -1302,7 +1302,8 @@ GimpImageType gimp_image_type(gint32 himage){
 /*hdrawable*/gint32 gimpts_drawable_next(gint32 hdrawable) {
   MyRes *dra=resFind(hdrawable);
   assert(IS_DRAWABLE(dra));
-  return (dra=dra->u.drawable.dnext)==dra->u.drawable.image->u.image.dhead ? 0 : dra->handle;
+  dra=dra->u.drawable.dnext;
+  return dra==dra->u.drawable.image->u.image.dhead ? 0 : dra->handle;
 }
 
 void gimpts_meta_init(GimptsMeta *meta) {
