@@ -1,3 +1,9 @@
+tif22pnm (0.12-1) karmic; urgency=low
+
+  * Fixed compilation errors and warnings.
+
+ -- Szabó Péter <pts@math.bme.hu>  Thu, 15 Dec 2011 23:40:41 +0100
+
 tif22pnm (0.11-3) unstable; urgency=low
 
   * Fiexed $prefix in make install

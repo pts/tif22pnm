@@ -73,10 +73,10 @@ elif [ "$CMD" = dist ]; then
   rm -f tif22pnm png22pnm *.o core DEADJOE *~ 
   rm -f cc_help.sh config.status config.log config.cache config.h
   set +ex
-  if type -p autoconf >/dev/null; then
-    rm -f configure
-    autoconf
-  fi
+  #if type -p autoconf >/dev/null; then
+  #  rm -f configure
+  #  autoconf
+  #fi
   WD="`pwd`"
   UPDIR="${WD%/*}"
   MYDIR="${WD##*/}"
