@@ -7,6 +7,10 @@
 ** png22pnm.c
 ** edited by pts@fazekas.hu at Tue Dec 10 16:33:53 CET 2002
 **
+** png22pnm.c has been tested with libpng 1.2 and 1.5. It should work with
+** libpng 1.2 or later. Compatiblity with libpng versions earlier than 1.2 is
+** not a goal.
+**
 ** based on pngtopnm.c -
 ** read a Portable Network Graphics file and produce a portable anymap
 **
@@ -375,8 +379,8 @@ ppm_parsecolor( char* colorname, pixval maxval )
 static png_uint_16 _get_png_val (png_byte **pp, int bit_depth);
 static void store_pixel (xel *pix, png_uint_16 r, png_uint_16 g, png_uint_16 b,                       png_uint_16 a);
 static int iscolor (png_color c);
-static void save_text (png_info *info_ptr, FILE *tfp);
-static void show_time (png_info *info_ptr);
+static void save_text (png_structp png_ptr, png_info *info_ptr, FILE *tfp);
+static void show_time (png_structp png_ptr, png_info *info_ptr);
 static void pngtopnm_error_handler (png_structp png_ptr, png_const_charp msg);
 static void convertpng (FILE *ifp, FILE *tfp);
 int main (int argc, char *argv[]);
@@ -389,7 +393,7 @@ static png_uint_16 maxval, maxmaxval;
 static png_uint_16 bgr, bgg, bgb; /* background colors */
 static int verbose = FALSE;
 static enum alpha_handling alpha = none;
-static int background = -1;
+static int do_background = -1;
 static char *backstring;
 static float displaygamma = -1.0; /* display gamma */
 static float totalgamma = -1.0;
@@ -398,7 +402,7 @@ static char *text_file;
 static int mtime = FALSE;
 static jmpbuf_wrapper pngtopnm_jmpbuf_struct;
 
-#define get_png_val(p) _get_png_val (&(p), info_ptr->bit_depth)
+#define get_png_val(p) _get_png_val (&(p), bit_depth)
 
 #ifdef __STDC__
 static png_uint_16 _get_png_val (png_byte **pp, int bit_depth)
@@ -467,33 +471,39 @@ png_color c;
 }
 
 #ifdef __STDC__
-static void save_text (png_info *info_ptr, FILE *tfp)
+static void save_text (png_structp png_ptr, png_info *info_ptr, FILE *tfp)
 #else
-static void save_text (info_ptr, tfp)
+static void save_text (png_ptr, info_ptr, tfp)
+png_structp png_ptr;
 png_info *info_ptr;
 FILE *tfp;
 #endif
 {
   int i, j, k;
 
-  for (i = 0 ; i < info_ptr->num_text ; i++) {
+  png_textp text;
+  int num_text;
+
+  png_get_text(png_ptr, info_ptr, &text, &num_text);
+
+  for (i = 0 ; i < num_text ; i++) {
     j = 0;
-    while (info_ptr->text[i].key[j] != '\0' && info_ptr->text[i].key[j] != ' ')
+    while (text[i].key[j] != '\0' && text[i].key[j] != ' ')
       j++;    
-    if (info_ptr->text[i].key[j] != ' ') {
-      fprintf (tfp, "%s", info_ptr->text[i].key);
-      for (j = strlen (info_ptr->text[i].key) ; j < 15 ; j++)
+    if (text[i].key[j] != ' ') {
+      fprintf (tfp, "%s", text[i].key);
+      for (j = strlen (text[i].key) ; j < 15 ; j++)
         putc (' ', tfp);
     } else {
-      fprintf (tfp, "\"%s\"", info_ptr->text[i].key);
-      for (j = strlen (info_ptr->text[i].key) ; j < 13 ; j++)
+      fprintf (tfp, "\"%s\"", text[i].key);
+      for (j = strlen (text[i].key) ; j < 13 ; j++)
         putc (' ', tfp);
     }
     putc (' ', tfp); /* at least one space between key and text */
     
-    for (j = 0 ; j+0U < info_ptr->text[i].text_length ; j++) {
-      putc (info_ptr->text[i].text[j], tfp);
-      if (info_ptr->text[i].text[j] == '\n')
+    for (j = 0 ; j+0U < text[i].text_length ; j++) {
+      putc (text[i].text[j], tfp);
+      if (text[i].text[j] == '\n')
         for (k = 0 ; k < 16 ; k++)
           putc ((int)' ', tfp);
     }
@@ -502,21 +512,24 @@ FILE *tfp;
 }
 
 #ifdef __STDC__
-static void show_time (png_info *info_ptr)
+static void show_time (png_structp png_ptr, png_info *info_ptr)
 #else
-static void show_time (info_ptr)
+static void show_time (png_ptr, info_ptr)
+png_structp png_ptr;
 png_info *info_ptr;
 #endif
 {
   static char *month[] =
     {"", "January", "February", "March", "April", "May", "June",
      "July", "August", "September", "October", "November", "December"};
+  png_timep mod_time;
 
-  if (info_ptr->valid & PNG_INFO_tIME) {
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tIME)) {
+    png_get_tIME(png_ptr, info_ptr, &mod_time);
     pm_message ("modification time: %02d %s %d %02d:%02d:%02d",
-                info_ptr->mod_time.day, month[info_ptr->mod_time.month],
-                info_ptr->mod_time.year, info_ptr->mod_time.hour,
-                info_ptr->mod_time.minute, info_ptr->mod_time.second);
+                mod_time->day, month[mod_time->month],
+                mod_time->year, mod_time->hour,
+                mod_time->minute, mod_time->second);
   }
 }
 
@@ -583,7 +596,22 @@ FILE *tfp;
   pixel *row;
   png_byte **png_image;
   png_byte *png_pixel;
+  png_uint_32 width;
+  png_uint_32 height;
   pixel *pnm_pixel;
+  int bit_depth;
+  png_byte color_type;
+  png_color_16p background;
+  double gamma;
+  png_bytep trans_alpha;
+  int num_trans;
+  png_color_16p trans_color;
+  png_color_8p sig_bit;
+  int num_palette;
+  png_colorp palette;
+  png_uint_32 x_pixels_per_unit, y_pixels_per_unit;
+  int phys_unit_type;
+  int has_phys;
   int x, y;
   int linesize;
   png_uint_16 c, c2, c3, a;
@@ -645,8 +673,45 @@ FILE *tfp;
   png_set_sig_bytes (png_ptr, SIG_CHECK_SIZE);
   png_read_info (png_ptr, info_ptr);
 
+  bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+  color_type = png_get_color_type(png_ptr, info_ptr);
+  width = png_get_image_width(png_ptr, info_ptr);
+  height = png_get_image_height(png_ptr, info_ptr);
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_bKGD)) {
+    png_get_bKGD(png_ptr, info_ptr, &background);
+  } else {
+    background = NULL;
+  }
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_gAMA)) {
+    png_get_gAMA(png_ptr, info_ptr, &gamma);
+  } else {
+    gamma = -1;
+  }
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+    png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, &trans_color);
+  } else {
+    trans_alpha = NULL;
+    num_trans = 0;
+    trans_color = NULL;
+  }
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_PLTE)) {
+    png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+  } else {
+    palette = NULL;
+    num_palette = 0;
+  }
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sBIT)) {
+    png_get_sBIT(png_ptr, info_ptr, &sig_bit);
+  } else {
+    sig_bit = NULL;
+  }
+  if (0 != (has_phys = png_get_valid(png_ptr, info_ptr, PNG_INFO_pHYs))) {
+    png_get_pHYs(png_ptr, info_ptr, &x_pixels_per_unit, &y_pixels_per_unit,
+                 &phys_unit_type);
+  }
+
   if (verbose) {
-    switch (info_ptr->color_type) {
+    switch (color_type) {
       case PNG_COLOR_TYPE_GRAY:
         type_string = "gray";
         alpha_string = "";
@@ -672,54 +737,57 @@ FILE *tfp;
         alpha_string = "+alpha";
         break;
     }
-    if (info_ptr->valid & PNG_INFO_tRNS) {
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
       alpha_string = "+transparency";
     }
 
-    if (info_ptr->valid & PNG_INFO_gAMA) {
-      sprintf (gamma_string, ", image gamma = %4.2f", info_ptr->gamma);
+    if (gamma >= 0) {
+      sprintf (gamma_string, ", image gamma = %4.2f", gamma);
     } else {
       strcpy (gamma_string, "");
     }
 
     if (verbose) {
       pm_message ("reading a %ldw x %ldh image, %d bit%s %s%s%s%s",
-		  info_ptr->width+0L, info_ptr->height+0L,
-		  info_ptr->bit_depth, info_ptr->bit_depth > 1 ? "s" : "",
+		  width + 0L, height + 0L,
+		  bit_depth, bit_depth > 1 ? "s" : "",
 		  type_string, alpha_string, gamma_string,
-		  info_ptr->interlace_type ? ", Adam7 interlaced" : "");
-      pm_message ("background {index, gray, red, green, blue} = "
-                  "{%d, %d, %d, %d, %d}",
-                  info_ptr->background.index,
-                  info_ptr->background.gray,
-                  info_ptr->background.red,
-                  info_ptr->background.green,
-                  info_ptr->background.blue);
+		  png_get_interlace_type(png_ptr, info_ptr) ?
+		  ", Adam7 interlaced" : "");
+      if (background != NULL) {
+        pm_message ("background {index, gray, red, green, blue} = "
+                    "{%d, %d, %d, %d, %d}",
+                    background->index,
+                    background->gray,
+                    background->red,
+                    background->green,
+                    background->blue);
+      }
     }
   }
 
-  png_image = (png_byte **)malloc (info_ptr->height * sizeof (png_byte*));
+  png_image = (png_byte **)malloc (height * sizeof (png_byte*));
   if (png_image == NULL) {
     png_destroy_read_struct (&png_ptr, &info_ptr, (png_infopp)NULL);
     pm_closer (ifp);
     { pm_error ("couldn't allocate space for image"); exit(1); }
   }
 
-  if (info_ptr->bit_depth == 16)
-    linesize = 2 * info_ptr->width;
+  if (bit_depth == 16)
+    linesize = 2 * width;
   else
-    linesize = info_ptr->width;
+    linesize = width;
 
-  if (info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+  if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
     linesize *= 2;
   else
-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB)
+  if (color_type == PNG_COLOR_TYPE_RGB)
     linesize *= 3;
   else
-  if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
+  if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
     linesize *= 4;
 
-  for (y = 0 ; y+0U < info_ptr->height ; y++) {
+  for (y = 0 ; y+0U < height ; y++) {
     png_image[y] = malloc (linesize);
     if (png_image[y] == NULL) {
       for (x = 0 ; x < y ; x++)
@@ -731,32 +799,32 @@ FILE *tfp;
     }
   }
 
-  if (info_ptr->bit_depth < 8)
+  if (bit_depth < 8)
     png_set_packing (png_ptr);
 
-  if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
+  if (color_type == PNG_COLOR_TYPE_PALETTE) {
     maxval = 255;
   } else {
-    maxval = (1l << info_ptr->bit_depth) - 1;
+    maxval = (1l << bit_depth) - 1;
   }
 
   /* gamma-correction */
   if (displaygamma != -1.0) {
-    if (info_ptr->valid & PNG_INFO_gAMA) {
-      if (displaygamma != info_ptr->gamma) {
-        png_set_gamma (png_ptr, displaygamma, info_ptr->gamma);
-	totalgamma = (double) info_ptr->gamma * (double) displaygamma;
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_gAMA)) {
+      if (displaygamma != gamma) {
+        png_set_gamma (png_ptr, displaygamma, gamma);
+	totalgamma = (double) gamma * (double) displaygamma;
 	/* in case of gamma-corrections, sBIT's as in the PNG-file are not valid anymore */
-	info_ptr->valid &= ~PNG_INFO_sBIT;
+	sig_bit = NULL;
         if (verbose)
           pm_message ("image gamma is %4.2f, converted for display gamma of %4.2f",
-                    info_ptr->gamma, displaygamma);
+                    gamma, displaygamma);
       }
     } else {
-      if (displaygamma != info_ptr->gamma) {
+      if (displaygamma != gamma) {
 	png_set_gamma (png_ptr, displaygamma, 1.0);
 	totalgamma = (double) displaygamma;
-	info_ptr->valid &= ~PNG_INFO_sBIT;
+	sig_bit = NULL;
 	if (verbose)
 	  pm_message ("image gamma assumed 1.0, converted for display gamma of %4.2f",
 		      displaygamma);
@@ -772,22 +840,18 @@ FILE *tfp;
      so we will use the sBIT info only for transparency, if we know that only
      solid and fully transparent is used */
 
-  if (info_ptr->valid & PNG_INFO_sBIT) {
+  if (sig_bit != NULL) {
     switch (alpha) {
       /*case mix_and_alpha: */
       case mix_only:
-        if (info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA ||
-            info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA ||
+            color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
           break;
-        if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE &&
-            (info_ptr->valid & PNG_INFO_tRNS)) {
+        if (color_type == PNG_COLOR_TYPE_PALETTE &&
+            png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
           trans_mix = TRUE;
-          for (i = 0 ; i < info_ptr->num_trans ; i++)
-#if (PNG_LIBPNG_VER < 10400)
-            if (info_ptr->trans[i] != 0 && info_ptr->trans[i] != 255) {
-#else
-            if (info_ptr->trans_alpha[i] != 0 && info_ptr->trans_alpha[i] != 255) {
-#endif
+          for (i = 0 ; i < num_trans ; i++)
+            if (trans_alpha[i] != 0 && trans_alpha[i] != 255) {
               trans_mix = FALSE;
               break;
             }
@@ -796,60 +860,60 @@ FILE *tfp;
         }
 
         /* else fall though to normal case */
-
+  
       case none_and_alpha:
       case none:
-        if ((info_ptr->color_type == PNG_COLOR_TYPE_PALETTE ||
-             info_ptr->color_type == PNG_COLOR_TYPE_RGB ||
-             info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA) &&
-            (info_ptr->sig_bit.red != info_ptr->sig_bit.green ||
-             info_ptr->sig_bit.red != info_ptr->sig_bit.blue) &&
+        if ((color_type == PNG_COLOR_TYPE_PALETTE ||
+             color_type == PNG_COLOR_TYPE_RGB ||
+             color_type == PNG_COLOR_TYPE_RGB_ALPHA) &&
+            (sig_bit->red != sig_bit->green ||
+             sig_bit->red != sig_bit->blue) &&
             alpha == none) {
 	  pm_message ("different bit depths for color channels not supported");
-	  pm_message ("writing file with %d bit resolution", info_ptr->bit_depth);
+	  pm_message ("writing file with %d bit resolution", bit_depth);
         } else {
-          if ((info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) &&
-	      (info_ptr->sig_bit.red < 255)) {
-	    for (i = 0 ; i < info_ptr->num_palette ; i++) {
-	      info_ptr->palette[i].red   >>= (8 - info_ptr->sig_bit.red);
-	      info_ptr->palette[i].green >>= (8 - info_ptr->sig_bit.green);
-	      info_ptr->palette[i].blue  >>= (8 - info_ptr->sig_bit.blue);
+          if ((color_type == PNG_COLOR_TYPE_PALETTE) &&
+	      (sig_bit->red < 255)) {
+	    for (i = 0 ; i < num_palette ; i++) {
+	      palette[i].red   >>= (8 - sig_bit->red);
+	      palette[i].green >>= (8 - sig_bit->green);
+	      palette[i].blue  >>= (8 - sig_bit->blue);
 	    }
-	    maxval = (1l << info_ptr->sig_bit.red) - 1;
+	    maxval = (1l << sig_bit->red) - 1;
 	    if (verbose)
 	      pm_message ("image has fewer significant bits, writing file with %d bits per channel", 
-		info_ptr->sig_bit.red);
+		sig_bit->red);
           } else
-          if ((info_ptr->color_type == PNG_COLOR_TYPE_RGB ||
-               info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA) &&
-	      (info_ptr->sig_bit.red < info_ptr->bit_depth)) {
-	    png_set_shift (png_ptr, &(info_ptr->sig_bit));
-	    maxval = (1l << info_ptr->sig_bit.red) - 1;
+          if ((color_type == PNG_COLOR_TYPE_RGB ||
+               color_type == PNG_COLOR_TYPE_RGB_ALPHA) &&
+	      (sig_bit->red < bit_depth)) {
+	    png_set_shift (png_ptr, sig_bit);
+	    maxval = (1l << sig_bit->red) - 1;
 	    if (verbose)
 	      pm_message ("image has fewer significant bits, writing file with %d bits per channel", 
-		info_ptr->sig_bit.red);
+		sig_bit->red);
           } else 
-          if ((info_ptr->color_type == PNG_COLOR_TYPE_GRAY ||
-               info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) &&
-	      (info_ptr->sig_bit.gray < info_ptr->bit_depth)) {
-	    png_set_shift (png_ptr, &(info_ptr->sig_bit));
-	    maxval = (1l << info_ptr->sig_bit.gray) - 1;
+          if ((color_type == PNG_COLOR_TYPE_GRAY ||
+               color_type == PNG_COLOR_TYPE_GRAY_ALPHA) &&
+	      (sig_bit->gray < bit_depth)) {
+	    png_set_shift (png_ptr, sig_bit);
+	    maxval = (1l << sig_bit->gray) - 1;
 	    if (verbose)
 	      pm_message ("image has fewer significant bits, writing file with %d bits",
-		info_ptr->sig_bit.gray);
+		sig_bit->gray);
           }
         }
         break;
 
       case alpha_only:
-        if ((info_ptr->color_type == PNG_COLOR_TYPE_RGB_ALPHA ||
-             info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) && 
-	    (info_ptr->sig_bit.gray < info_ptr->bit_depth)) {
-	  png_set_shift (png_ptr, &(info_ptr->sig_bit));
+        if ((color_type == PNG_COLOR_TYPE_RGB_ALPHA ||
+             color_type == PNG_COLOR_TYPE_GRAY_ALPHA) && 
+	    (sig_bit->gray < bit_depth)) {
+	  png_set_shift (png_ptr, sig_bit);
 	  if (verbose)
 	    pm_message ("image has fewer significant bits, writing file with %d bits", 
-		info_ptr->sig_bit.alpha);
-	  maxval = (1l << info_ptr->sig_bit.alpha) - 1;
+		sig_bit->alpha);
+	  maxval = (1l << sig_bit->alpha) - 1;
         }
         break;
 
@@ -858,22 +922,23 @@ FILE *tfp;
 
   /* didn't manage to get libpng to work (bugs?) concerning background */
   /* processing, therefore we do our own using bgr, bgg and bgb        */
-  if (info_ptr->valid & PNG_INFO_bKGD)
-    switch (info_ptr->color_type) {
+
+  if (background != NULL)
+    switch (color_type) {
       case PNG_COLOR_TYPE_GRAY:
       case PNG_COLOR_TYPE_GRAY_ALPHA:
-        bgr = bgg = bgb = gamma_correct (info_ptr->background.gray, totalgamma);
+        bgr = bgg = bgb = gamma_correct (background->gray, totalgamma);
         break;
       case PNG_COLOR_TYPE_PALETTE:
-        bgr = gamma_correct (info_ptr->palette[info_ptr->background.index].red, totalgamma);
-        bgg = gamma_correct (info_ptr->palette[info_ptr->background.index].green, totalgamma);
-        bgb = gamma_correct (info_ptr->palette[info_ptr->background.index].blue, totalgamma);
+        bgr = gamma_correct (palette[background->index].red, totalgamma);
+        bgg = gamma_correct (palette[background->index].green, totalgamma);
+        bgb = gamma_correct (palette[background->index].blue, totalgamma);
         break;
       case PNG_COLOR_TYPE_RGB:
       case PNG_COLOR_TYPE_RGB_ALPHA:
-        bgr = gamma_correct (info_ptr->background.red, totalgamma);
-        bgg = gamma_correct (info_ptr->background.green, totalgamma);
-        bgb = gamma_correct (info_ptr->background.blue, totalgamma);
+        bgr = gamma_correct (background->red, totalgamma);
+        bgg = gamma_correct (background->green, totalgamma);
+        bgb = gamma_correct (background->blue, totalgamma);
         break;
     }
   else
@@ -882,10 +947,10 @@ FILE *tfp;
 
   /* but if background was specified from the command-line, we always use that	*/
   /* I chose to do no gamma-correction in this case; which is a bit arbitrary	*/
-  if (background > -1)
+  if (do_background > -1)
   {
     backcolor = ppm_parsecolor (backstring, maxval);
-    switch (info_ptr->color_type) {
+    switch (color_type) {
       case PNG_COLOR_TYPE_GRAY:
       case PNG_COLOR_TYPE_GRAY_ALPHA:
         bgr = bgg = bgb = PNM_GET1 (backcolor);
@@ -904,13 +969,13 @@ FILE *tfp;
   png_read_end (png_ptr, info_ptr);
 
   if (mtime)
-    show_time (info_ptr);
+    show_time (png_ptr, info_ptr);
   if (text)
-    save_text (info_ptr, tfp);
+    save_text (png_ptr, info_ptr, tfp);
 
-  if (info_ptr->valid & PNG_INFO_pHYs) {
-    float r;
-    r = (float)info_ptr->x_pixels_per_unit / info_ptr->y_pixels_per_unit;
+  if (has_phys) {
+    double r;
+    r = (double)x_pixels_per_unit / y_pixels_per_unit;
     if (r != 1.0) {
       pm_message ("warning - non-square pixels; to fix do a 'pnmscale -%cscale %g'",
 		    r < 1.0 ? 'x' : 'y',
@@ -918,8 +983,8 @@ FILE *tfp;
     }
   }
 
-  if ((row = pnm_allocrow (info_ptr->width)) == NULL) {
-    for (y = 0 ; y+0U < info_ptr->height ; y++)
+  if ((row = pnm_allocrow (width)) == NULL) {
+    for (y = 0 ; y+0U < height ; y++)
       free (png_image[y]);
     free (png_image);
     png_destroy_read_struct (&png_ptr, &info_ptr, (png_infopp)NULL);
@@ -928,19 +993,15 @@ FILE *tfp;
   }
 
   if (alpha == alpha_only) {
-    if (info_ptr->color_type == PNG_COLOR_TYPE_GRAY ||
-        info_ptr->color_type == PNG_COLOR_TYPE_RGB) {
+    if (color_type == PNG_COLOR_TYPE_GRAY ||
+        color_type == PNG_COLOR_TYPE_RGB) {
       pnm_type = PBM_TYPE;
     } else
-      if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
+      if (color_type == PNG_COLOR_TYPE_PALETTE) {
         pnm_type = PBM_TYPE;
-        if (info_ptr->valid & PNG_INFO_tRNS) {
-          for (i = 0 ; i < info_ptr->num_trans ; i++) {
-#if (PNG_LIBPNG_VER < 10400)
-            if (info_ptr->trans[i] != 0 && info_ptr->trans[i] != maxval) {
-#else
-            if (info_ptr->trans_alpha[i] != 0 && info_ptr->trans_alpha[i] != maxval) {
-#endif
+        if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+          for (i = 0 ; i < num_trans ; i++) {
+            if (trans_alpha[i] != 0 && trans_alpha[i] != maxval) {
               pnm_type = PGM_TYPE;
               break;
             }
@@ -953,18 +1014,18 @@ FILE *tfp;
           pnm_type = PGM_TYPE;
       }
   } else {
-    if (info_ptr->color_type == PNG_COLOR_TYPE_GRAY ||
-        info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-      if (info_ptr->bit_depth == 1) {
+    if (color_type == PNG_COLOR_TYPE_GRAY ||
+        color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+      if (bit_depth == 1) {
         pnm_type = PBM_TYPE;
       } else {
         pnm_type = PGM_TYPE;
       }
     } else
-    if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
+    if (color_type == PNG_COLOR_TYPE_PALETTE) {
       pnm_type = PGM_TYPE;
-      for (i = 0 ; i < info_ptr->num_palette ; i++) {
-        if (iscolor (info_ptr->palette[i])) {
+      for (i = 0 ; i < num_palette ; i++) {
+        if (iscolor (palette[i])) {
           pnm_type = PPM_TYPE;
           break;
         }
@@ -996,32 +1057,28 @@ FILE *tfp;
   /* Dat: supporting only RAWBITS */
   switch (pnm_type) {
    case PBM_TYPE:
-    fprintf(so,"P4 %lu %lu\n", 0LU+info_ptr->width, 0LU+info_ptr->height);
+    fprintf(so,"P4 %lu %lu\n", 0LU+width, 0LU+height);
     break;
    case PGM_TYPE:
-    fprintf(so,"P5 %lu %lu 255\n", 0LU+info_ptr->width, 0LU+info_ptr->height);
+    fprintf(so,"P5 %lu %lu 255\n", 0LU+width, 0LU+height);
     break;
    case PPM_TYPE:
-    fprintf(so,"P6 %lu %lu 255\n", 0LU+info_ptr->width, 0LU+info_ptr->height);
+    fprintf(so,"P6 %lu %lu 255\n", 0LU+width, 0LU+height);
     break;
    default:
     assert(0);
   }
 
-  for (y = 0 ; y+0U < info_ptr->height ; y++) {
+  for (y = 0 ; y+0U < height ; y++) {
     png_pixel = png_image[y];
     pnm_pixel = row;
-    for (x = 0 ; x+0U < info_ptr->width ; x++) {
+    for (x = 0 ; x+0U < width ; x++) {
       c = get_png_val (png_pixel);
-      switch (info_ptr->color_type) {
+      switch (color_type) {
         case PNG_COLOR_TYPE_GRAY:
           store_pixel (pnm_pixel, c, c, c,
-		((info_ptr->valid & PNG_INFO_tRNS) &&
-#if (PNG_LIBPNG_VER < 10400)
-		 (c == gamma_correct (info_ptr->trans_values.gray, totalgamma))) ?
-#else
-		 (c == gamma_correct (info_ptr->trans_color.gray, totalgamma))) ?
-#endif
+		(trans_color != NULL &&
+		 (c == gamma_correct (trans_color->gray, totalgamma))) ?
 			0 : maxval);
           break;
 
@@ -1031,31 +1088,20 @@ FILE *tfp;
           break;
 
         case PNG_COLOR_TYPE_PALETTE:
-          store_pixel (pnm_pixel, info_ptr->palette[c].red,
-                       info_ptr->palette[c].green, info_ptr->palette[c].blue,
-                       (info_ptr->valid & PNG_INFO_tRNS) &&
-                        c<info_ptr->num_trans ?
-#if (PNG_LIBPNG_VER < 10400)
-                        info_ptr->trans[c] : maxval);
-#else
-                        info_ptr->trans_alpha[c] : maxval);
-#endif
+          store_pixel (pnm_pixel, palette[c].red,
+                       palette[c].green, palette[c].blue,
+                       (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) &&
+                        c < num_trans ? trans_alpha[c] : maxval);
           break;
 
         case PNG_COLOR_TYPE_RGB:
           c2 = get_png_val (png_pixel);
           c3 = get_png_val (png_pixel);
           store_pixel (pnm_pixel, c, c2, c3,
-		((info_ptr->valid & PNG_INFO_tRNS) &&
-#if (PNG_LIBPNG_VER < 10400)
-		 (c  == gamma_correct (info_ptr->trans_values.red, totalgamma)) &&
-		 (c2 == gamma_correct (info_ptr->trans_values.green, totalgamma)) &&
-		 (c3 == gamma_correct (info_ptr->trans_values.blue, totalgamma))) ?
-#else
-		 (c  == gamma_correct (info_ptr->trans_color.red, totalgamma)) &&
-		 (c2 == gamma_correct (info_ptr->trans_color.green, totalgamma)) &&
-		 (c3 == gamma_correct (info_ptr->trans_color.blue, totalgamma))) ?
-#endif
+		(trans_color != NULL &&
+		 (c  == gamma_correct (trans_color->red, totalgamma)) &&
+		 (c2 == gamma_correct (trans_color->green, totalgamma)) &&
+		 (c3 == gamma_correct (trans_color->blue, totalgamma))) ?
 			0 : maxval);
           break;
 
@@ -1068,7 +1114,7 @@ FILE *tfp;
 
         default:
           pnm_freerow (row);
-          for (i = 0 ; i+0U < info_ptr->height ; i++)
+          for (i = 0 ; i+0U < height ; i++)
             free (png_image[i]);
           free (png_image);
           png_destroy_read_struct (&png_ptr, &info_ptr, (png_infopp)NULL);
@@ -1080,7 +1126,7 @@ FILE *tfp;
 
     /* pnm_writepnmrow (stdout, row, info_ptr->width, maxval, pnm_type, FALSE); */
     {
-      unsigned wd=info_ptr->width, len, cc=1;
+      unsigned wd=width, len, cc=1;
       char *rowa, *p;
       register xel *xP=row;
       /* Imp: eliminate several pm_allocrow */
@@ -1179,7 +1225,7 @@ pnm_writepnmrow( file, xelrow, cols, maxval, format, forceplain )
   fclose(so);
 #endif
   pnm_freerow (row);
-  for (y = 0 ; y+8U < info_ptr->height ; y++)
+  for (y = 0 ; y+8U < height ; y++)
     free (png_image[y]);
   free (png_image);
   png_destroy_read_struct (&png_ptr, &info_ptr, (png_infopp)NULL);
@@ -1214,7 +1260,7 @@ char *argv[];
     } else if (pm_keymatch (argv[argn], "-rgba", 2)) {
       alpha = none_and_alpha;
     } else if (pm_keymatch (argv[argn], "-background", 2)) {
-      background = 1;
+      do_background = 1;
       if (++argn < argc)
         backstring = argv[argn];
       else
