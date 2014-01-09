@@ -39,7 +39,7 @@
 #include "minigimp.h"
 #include <stdio.h>
 #include <string.h> /* strcmp() */
-#ifdef __MINGW32__
+#ifdef _WIN32
 #undef __STRICT_ANSI__
 #include <fcntl.h> /* setmode() */
 #endif
@@ -200,7 +200,7 @@ int main ___((int argc, char const* const* argv), ( argc, argv ),
   }
 
   if (0==strcmp(outputfile, "-")) {
-#ifdef __MINGW32__
+#ifdef _WIN32
     setmode(1, O_BINARY);
 #endif
     outputfile=(char const*)NULLP;

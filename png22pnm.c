@@ -568,7 +568,8 @@ png_const_charp msg;
 
 #define SIG_CHECK_SIZE 4
 
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+/* If __MINGW32__ is defined, then _WIN32 is also defined. */
+#if defined(_WIN32) || defined(__CYGWIN__)
 #define DO_WIN 1
 #else
 #undef  DO_WIN
