@@ -11,7 +11,7 @@ but tif22pnm handles a wider range of TIFF files and it is able to output
 the alpha channel as a PBM or PGM file. png22pnm, a converter from PNG to
 PNM is also bundled into the distribution.
 
-Caveat: tiff2pnm v0.07 contains >1000 lines of untested code. The author
+Caveat: tif22pnm v0.07 contains >1000 lines of untested code. The author
 wants to improve the software, and he welcomes bug reports. The author has
 tested v0.07 with around 20 very different input files, and it worked. More
 thorough testing seems to be necessary.
@@ -144,7 +144,7 @@ As root,
 
 Usage
 ~~~~~
-	$ tiff2pnm
+	$ tif22pnm
 	This is tif22pnm v0.07: TIFF <-> PNM converter, by pts@fazekas.hu
 	Usage: ./tif22pnm [options] [--] in.img [out.img]
 	Options are:
