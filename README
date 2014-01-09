@@ -1,3 +1,5 @@
+tif22pnm: TIFF-to-PNM converter and png22pnm, a PNG-to-PNM converter
+
 This is the README for tif22pnm.c.
 by pts@fazekas.hu at Sun Apr 14 22:56:35 CEST 2002
 Tue Jun 11 18:10:35 CEST 2002
