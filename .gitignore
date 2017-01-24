@@ -1,1 +1,11 @@
 *~
+*.o
+png22pnm
+png22pnm.xstatic
+png22pnm.xstatic.uncompressed
+png22pnm.exe
+png22png.uncompressed.exe
+tif22pnm
+cc_help.sh
+config.log
+config.status
