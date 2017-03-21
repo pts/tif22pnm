@@ -115,5 +115,5 @@ build
 
 SOURCES='png22pnm.c'
 TARGET=png22pnm
-LIBS="$LIBS_PNG"
+LIBS="$LIBS_PNG $LIBS_M"
 build

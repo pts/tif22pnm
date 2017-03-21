@@ -115,6 +115,7 @@ dnl vvv "tiff -lm -lz -ljpeg" is required by Win32 MinGW
 AC_SEARCH_LIBS(TIFFRGBAImageGet, [tiff tiff6 "tiff -lm" "tiff -lm -lz" "tiff -lm -lz -ljpeg"],
   [LIBS_TIFF="$LIBS"], [LIBS_TIFF=missing])
 dnl AC_MSG_ERROR(libtiff required))
+LIBS=""
 fi
 
 if test xmissing != x"$LIBS_PNG"; then
@@ -122,6 +123,18 @@ LIBS=""
 dnl vvv "png -lz" is required by Win32 MinGW
 dnl vvv "png12 -lz -lm" is required by Debian Sid
 AC_SEARCH_LIBS(png_create_read_struct, [png "png -lz" "png -lz -lm" "png12 -lz -lm" "png13 -lz -lm" "png14 -lz -lm"], [LIBS_PNG="$LIBS"], [LIBS_PNG=missing])
+LIBS=""
+fi
+
+AC_SUBST(LIBS_M)
+LIBS_M=""
+if test xmissing != x"$LIBS_PNG"; then
+LIBS=""
+AC_SEARCH_LIBS(pow, [m], [LIBS_M="$LIBS"], [LIBS_M=missing])
+LIBS=""
+if test xmissing = x"$LIBS_M"; then
+AC_MSG_ERROR(-lm required)
+fi
 fi
 
 dnl Checks for header files.

@@ -10,3 +10,4 @@ cc_help.sh
 config.log
 config.status
 config.h
+compiled.stamp
