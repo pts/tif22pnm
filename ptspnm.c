@@ -76,7 +76,6 @@ int ptspnm_save_image(gchar const*filename0, gint32 himage, gint32 hdrawable,
   GimpPixelRgn r;
   GimpDrawable *gd;
   gint32 hsaved;
-  guchar *topleft;
   GimpImageType type;
   
 #if 0
@@ -115,7 +114,6 @@ int ptspnm_save_image(gchar const*filename0, gint32 himage, gint32 hdrawable,
     }
     gd=gimp_drawable_get(hsaved);
     gimp_pixel_rgn_init(&r, gd, 0, 0, gd->width, gd->height, FALSE, FALSE);
-    topleft=gimpts_pixel_rgn_get_topleft(&r);
     switch (sphoto) {
      case GIMPTS_FF_pbm:
       save_pbm(f, gd, &r, rawbits, comment);

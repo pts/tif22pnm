@@ -1366,7 +1366,7 @@ read_separate (guchar       *source,
   gint    col, row, c;
   gint    bitsleft = 8, maxval = (1 << bps) - 1;
 
-  (void)alpha; (void)extra; /**** pts ****/
+  (void)alpha; (void)extra; (void)photomet; /**** pts ****/
 
   if (bps > 8) {
     g_message("TIFF Unsupported layout\n");
@@ -1377,7 +1377,6 @@ read_separate (guchar       *source,
     c = 0;
   } else {
     c = (sample - channel[0].drawable->bpp) + 4;
-    photomet = PHOTOMETRIC_MINISBLACK;
   }
 
   gimp_pixel_rgn_init (&(channel[c].pixel_rgn), channel[c].drawable,
