@@ -28,9 +28,9 @@ dnl AC_PTS_PROG_CFLAGS(fs, -fsigned-char)
 dnl AC_PTS_PROG_CFLAGS(nrne, -fno-rtti -fno-exceptions)
 dnl ^^^ `g++ -fno-rtti': disables `typeinfo' (??) and run-time type identification
 dnl ^^^ `g++ -fno-exceptions': disables catch and throw
-AC_PTS_PROG_CFLAGSB(apwaw, -ansi -pedantic -Wall -W)
+AC_PTS_PROG_CFLAGSB(apwaw, -ansi -pedantic -Wall -W -Wextra)
 dnl gcc-3.2 gives tons of useless warnings on -Wtraditional
-AC_PTS_CHECK_IGNORING(nebfcmd,-W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations)
+AC_PTS_CHECK_IGNORING(nebfcmd,-W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations)
 if test x"$ac_cv_pts_ignoring_nebfcmd" = xyes
 then ac_cv_prog_cxx_nebfcmd=no
 fi

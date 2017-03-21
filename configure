@@ -2128,13 +2128,13 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 CFLAGS=" "
 
 
-echo "$as_me:$LINENO: checking whether ${CC-gcc} accepts -ansi -pedantic -Wall -W" >&5
-echo $ECHO_N "checking whether ${CC-gcc} accepts -ansi -pedantic -Wall -W... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether ${CC-gcc} accepts -ansi -pedantic -Wall -W -Wextra" >&5
+echo $ECHO_N "checking whether ${CC-gcc} accepts -ansi -pedantic -Wall -W -Wextra... $ECHO_C" >&6
 if test "${ac_cv_prog_cc_apwaw+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   echo 'void f(void);void f(void){}' > conftest.c
-if test -z "`${CC-gcc} -ansi -pedantic -Wall -W -c conftest.c 2>&1`"
+if test -z "`${CC-gcc} -ansi -pedantic -Wall -W -Wextra -c conftest.c 2>&1`"
 then ac_cv_prog_cc_apwaw=yes;
 else ac_cv_prog_cc_apwaw=no; fi
 rm -f conftest*
@@ -2142,15 +2142,15 @@ rm -f conftest*
 fi
 echo "$as_me:$LINENO: result: $ac_cv_prog_cc_apwaw" >&5
 echo "${ECHO_T}$ac_cv_prog_cc_apwaw" >&6
-if test $ac_cv_prog_cc_apwaw = yes; then CFLAGSB="$CFLAGSB -ansi -pedantic -Wall -W"; fi
+if test $ac_cv_prog_cc_apwaw = yes; then CFLAGSB="$CFLAGSB -ansi -pedantic -Wall -W -Wextra"; fi
 
 
 
-  XTRA="-W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
-  CC_bak="$CC"   CC="${CC:-cc}  -Werror -W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
-  CXX_bak="$CXX" CXX="${CXX:-c++} -Werror -W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
-  echo "$as_me:$LINENO: checking for ignored -W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations" >&5
-echo $ECHO_N "checking for ignored -W -Wall -Wnested-externs -Wbad-function-cast -Wmissing-declarations... $ECHO_C" >&6
+  XTRA="-W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
+  CC_bak="$CC"   CC="${CC:-cc}  -Werror -W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
+  CXX_bak="$CXX" CXX="${CXX:-c++} -Werror -W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations"
+  echo "$as_me:$LINENO: checking for ignored -W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations" >&5
+echo $ECHO_N "checking for ignored -W -Wall -Wextra -Wnested-externs -Wbad-function-cast -Wmissing-declarations... $ECHO_C" >&6
 if test "${ac_cv_pts_ignoring_nebfcmd+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
