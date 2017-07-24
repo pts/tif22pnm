@@ -122,7 +122,7 @@ typedef unsigned long pixel;
 #define PPM_ASSIGN(p,red,grn,blu) (p) = ((pixel) (red) << 20) | ((pixel) (grn) << 10) | (pixel) (blu)
 #define PPM_EQUAL(p,q) ((p) == (q))
 
-static char* pm_allocrow (int const cols, int const size);
+static void* pm_allocrow (int const cols, int const size);
 #define pnm_allocrow( cols ) ((xel*) pm_allocrow( cols, sizeof(xel) ))
 #define PNM_ASSIGN1(x,v) PPM_ASSIGN(x,0,0,v)
 #define PNM_GET1(x) PPM_GETB(x)
@@ -141,7 +141,7 @@ static void pm_usage (const char usage[], FILE *f) {
   exit(1);
 }
 
-static char* pm_allocrow(int const cols, int const size) {
+static void* pm_allocrow(int const cols, int const size) {
     register char* itrow;
 
     itrow = (char*) malloc( cols * size );
